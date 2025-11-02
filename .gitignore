@@ -1,3 +1,6 @@
+# PyTorch Lightning logs
+lightning_logs/
+
 data/
 models/
 
