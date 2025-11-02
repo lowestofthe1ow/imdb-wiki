@@ -1,5 +1,7 @@
 import pandas as pd
 import numpy as np
+import os
+import sys
 
 from scipy.io import loadmat
 from datetime import datetime
@@ -53,8 +55,12 @@ def extract_metadata(path, var_name):
     return df
 
 
-metadata_imdb = extract_metadata("data/imdb_crop/imdb.mat", "imdb")
-metadata_wiki = extract_metadata("data/wiki_crop/wiki.mat", "wiki")
+metadata_imdb = extract_metadata(
+    os.path.join(sys.argv[1], "imdb_crop/imdb.mat"), "imdb"
+)
+metadata_wiki = extract_metadata(
+    os.path.join(sys.argv[1], "wiki_crop/wiki.mat"), "wiki"
+)
 
 pd.set_option("display.max_rows", None)
 pd.set_option("display.max_columns", None)
@@ -89,4 +95,5 @@ y_resampled_df = pd.Series(y_resampled, name="age")
 metadata_downsized = pd.concat([X_resampled_df, y_resampled_df], axis=1).sort_index()
 
 # Write to CSV file
+os.makedirs("data", exist_ok=True)
 metadata_downsized.to_csv("data/imdbwiki.csv", index=False)
