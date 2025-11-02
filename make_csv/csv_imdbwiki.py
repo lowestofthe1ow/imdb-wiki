@@ -9,7 +9,7 @@ from dateutil.relativedelta import relativedelta
 from imblearn.under_sampling import RandomUnderSampler
 
 
-def extract_metadata(path, var_name):
+def extract_metadata(path, var_name, path_prefix):
     metadata = loadmat(path, mat_dtype=False)
 
     # Extract all needed variables
@@ -24,7 +24,9 @@ def extract_metadata(path, var_name):
     )
 
     # Set file paths
-    df["full_path"] = f"data/{var_name}_crop/" + df["full_path"]
+    df["full_path"] = df["full_path"].apply(
+        lambda x: os.path.join(path_prefix, f"{var_name}_crop", x)
+    )
 
     # Convert birthday to numeric and subtract Unix epoch datenum
     df["dob"] = pd.to_numeric(df["dob"], errors="coerce")
@@ -56,10 +58,10 @@ def extract_metadata(path, var_name):
 
 
 metadata_imdb = extract_metadata(
-    os.path.join(sys.argv[1], "imdb_crop/imdb.mat"), "imdb"
+    os.path.join(sys.argv[1], "imdb_crop/imdb.mat"), "imdb", sys.argv[1]
 )
 metadata_wiki = extract_metadata(
-    os.path.join(sys.argv[1], "wiki_crop/wiki.mat"), "wiki"
+    os.path.join(sys.argv[2], "wiki_crop/wiki.mat"), "wiki", sys.argv[2]
 )
 
 pd.set_option("display.max_rows", None)
