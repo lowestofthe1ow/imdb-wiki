@@ -1,5 +1,6 @@
 import torch
 import lightning as L
+import argparse
 
 from torchvision import models
 from torch.utils.data import Dataset, DataLoader
@@ -9,12 +10,18 @@ from lightning_modules.finetune import Finetune
 # Possible tradeoff between FP precision and performance
 # torch.set_float32_matmul_precision("medium")
 
+# Command-line arguments
+parser = argparse.ArgumentParser()
+parser.add_argument("--batch-size", type=int)
+parser.add_argument("--workers", type=int)
+parser.add_argument("--min-epochs", type=int)
+parser.add_argument("--max-epochs", type=int)
+args = parser.parse_args()
+
 # Load IMDB-WIKI data
-LOADER_BATCH_SIZE = 32
-LOADER_WORKERS = 15
 dataset = IMDBWIKIDataset("data/imdbwiki.csv")
 loader = DataLoader(
-    dataset, batch_size=LOADER_BATCH_SIZE, num_workers=LOADER_WORKERS, shuffle=True
+    dataset, batch_size=args.batch_size, num_workers=args.workers, shuffle=True
 )
 
 print("Data loaded from /data/imdbwiki.csv.")
@@ -33,6 +40,6 @@ vgg16.classifier[6] = torch.nn.Linear(
 
 print("Trained model will be saved to /imdb_wiki.ckpt. Starting training...")
 
-model = Finetune(learning_rate=1e-3, batch_size=32, model=vgg16)
-trainer = L.Trainer()
+model = Finetune(learning_rate=1e-3, batch_size=args.batch_size, model=vgg16)
+trainer = L.Trainer(min_epochs=args.min_epochs, max_epochs=args.max_epochs)
 trainer.fit(model=model, train_dataloaders=loader)
