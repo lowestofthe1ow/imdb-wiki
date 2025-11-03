@@ -26,7 +26,6 @@ class Finetune(L.LightningModule):
 
         return loss
 
-    """
     def validation_step(self, batch, batch_idx):
         inputs, labels = batch
         outputs = self(inputs)
@@ -34,7 +33,6 @@ class Finetune(L.LightningModule):
         self.log("val_loss", loss, on_epoch=True, prog_bar=True)
 
         return loss
-    """
 
     def configure_optimizers(self):
         optimizer = torch.optim.SGD(self.parameters(), lr=self.hparams.learning_rate)
