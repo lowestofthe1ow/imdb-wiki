@@ -7,6 +7,7 @@ from torch.utils.data import Dataset, DataLoader, random_split
 from torch_datasets.imdbwiki import IMDBWIKIDataset
 from lightning_modules.finetune import Finetune
 from lightning.pytorch.callbacks.early_stopping import EarlyStopping
+from lightning.pytorch.callbacks import ModelCheckpoint
 
 # Possible tradeoff between FP precision and performance
 # torch.set_float32_matmul_precision("medium")
@@ -49,11 +50,20 @@ vgg16.classifier[6] = torch.nn.Linear(
     101,  # 101 age classes
 )
 
-print("Trained model will be saved to /imdb_wiki.ckpt. Starting training...")
+print("Starting training...")
 
 model = Finetune(learning_rate=1e-3, batch_size=args.batch_size, model=vgg16)
+
+checkpoint_config = ModelCheckpoint(
+    dirpath="/checkpoints",
+    filename="my_model_{epoch:02d}_{val_loss:.2f}",
+    save_top_k=1,
+    monitor="val_loss",
+    mode="min",
+)
+
 trainer = L.Trainer(
-    callbacks=[EarlyStopping(monitor="val_loss", mode="min")],
+    callbacks=[EarlyStopping(monitor="val_loss", mode="min"), checkpoint_config],
     min_epochs=args.min_epochs,
     max_epochs=args.max_epochs,
 )
