@@ -1,6 +1,7 @@
 import torch
 import lightning as L
 import argparse
+import os
 
 from torchvision import models
 from torch.utils.data import Dataset, DataLoader, random_split
@@ -55,16 +56,19 @@ print("Starting training...")
 model = Finetune(learning_rate=1e-3, batch_size=args.batch_size, model=vgg16)
 
 checkpoint_config = ModelCheckpoint(
-    dirpath="/checkpoints",
+    dirpath="checkpoints",
     filename="my_model_{epoch:02d}_{val_loss:.2f}",
     save_top_k=1,
     monitor="val_loss",
     mode="min",
 )
 
+os.makedirs("checkpoints", exist_ok=True)
 trainer = L.Trainer(
     callbacks=[EarlyStopping(monitor="val_loss", mode="min"), checkpoint_config],
     min_epochs=args.min_epochs,
     max_epochs=args.max_epochs,
 )
 trainer.fit(model=model, train_dataloaders=train_loader, val_dataloaders=val_loader)
+
+torch.save(model.state_dict(), "imdbwiki_dex.pth")
