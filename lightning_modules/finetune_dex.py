@@ -5,16 +5,17 @@ import lightning as L
 class FinetuneDEX(L.LightningModule):
     def __init__(self, learning_rate, batch_size, model):
         super().__init__()
-        self.save_hyperparameters(ignore=["model"])  # Saves params as hyperparameters
 
-        # Save model
+        # Automatically saves params as hyperparameters
+        self.save_hyperparameters(ignore=["model"])
         self.model = model
 
         # Cross-entropy loss for classification
         self.criterion = torch.nn.CrossEntropyLoss()
 
     def forward(self, x):
-        return self.model(x)  # Do a forward pass through the model
+        # Do a forward pass through the model
+        return self.model(x)
 
     def training_step(self, batch, batch_idx):
         inputs, labels = batch
@@ -33,5 +34,6 @@ class FinetuneDEX(L.LightningModule):
         return loss
 
     def configure_optimizers(self):
+        # I'm pretty sure stochastic gradient descent is standard here
         optimizer = torch.optim.SGD(self.parameters(), lr=self.hparams.learning_rate)
         return optimizer

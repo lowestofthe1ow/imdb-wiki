@@ -6,6 +6,7 @@
 # --workers     Number of CPU workers
 # --min-epochs  Minimum number of epochs, even if early stop is triggered
 # --max-epochs  Maximum number of epochs, even if early stop is NOT triggered
+# --method      "MVL" or "DEX"
 
 import torch
 import lightning as L
@@ -16,6 +17,7 @@ from torchvision import models
 from torch.utils.data import Dataset, DataLoader, random_split
 from torch_datasets.imdbwiki import IMDBWIKIDataset
 from lightning_modules.finetune_dex import FinetuneDEX
+from lightning_modules.finetune_mvl import FinetuneMVL
 from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 from lightning.pytorch.callbacks import ModelCheckpoint
 
@@ -29,6 +31,7 @@ parser.add_argument("--workers", type=int)
 parser.add_argument("--min-epochs", type=int)
 parser.add_argument("--max-epochs", type=int)
 parser.add_argument("--learning-rate", type=float)
+parser.add_argument("--method", type=str)
 args = parser.parse_args()
 
 # Load IMDB-WIKI data
@@ -63,9 +66,15 @@ vgg16.classifier[6] = torch.nn.Linear(
 
 print("Starting training...")
 
-model = FinetuneDEX(
-    learning_rate=args.learning_rate, batch_size=args.batch_size, model=vgg16
-)
+match args.method:
+    case "DEX":
+        model = FinetuneDEX(
+            learning_rate=args.learning_rate, batch_size=args.batch_size, model=vgg16
+        )
+    case "MVL":
+        model = FinetuneMVL(
+            learning_rate=args.learning_rate, batch_size=args.batch_size, model=vgg16
+        )
 
 # Set up saving model checkpoints
 os.makedirs("checkpoints", exist_ok=True)
