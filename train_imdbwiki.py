@@ -84,10 +84,7 @@ match args.method:
             layer_params=layer_params,
         )
     case "MVL":
-        model = FinetuneMVL(
-            model=vgg16,
-            layer_params=layer_params,
-        )
+        model = FinetuneMVL(model=vgg16)
 
 
 # Set up saving model checkpoints

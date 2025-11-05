@@ -6,11 +6,9 @@ from torch.optim.lr_scheduler import StepLR
 
 
 class FinetuneMVL(L.LightningModule):
-    def __init__(self, layer_params, model):
+    def __init__(self, model):
         super().__init__()
 
-        # Automatically saves params as hyperparameters
-        self.layer_params = layer_params
         self.model = model
 
         # Cross-entropy loss for classification
@@ -40,7 +38,9 @@ class FinetuneMVL(L.LightningModule):
     def configure_optimizers(self):
         # Paper uses SGD
         optimizer = torch.optim.SGD(
-            self.layer_params,
+            self.model.parameters(),
+            lr=0.001,  # Fixed unlike DEX...?
+            # Paper did not specify these parameters but I think these are standard
             weight_decay=0.0005,
             momentum=0.9,
         )
@@ -48,7 +48,7 @@ class FinetuneMVL(L.LightningModule):
         # "The learning rate is reduced every 10 passes through the entire data by a factor of 10"
         scheduler = StepLR(
             optimizer,
-            step_size=10,
+            step_size=15,  # Paper reduces learning rate every 15 epochs for VGG-16 arch
             gamma=0.1,  # Divide by 10 lol
         )
 

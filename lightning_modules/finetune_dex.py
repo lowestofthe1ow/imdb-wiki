@@ -8,7 +8,6 @@ class FinetuneDEX(L.LightningModule):
     def __init__(self, layer_params, model):
         super().__init__()
 
-        # Automatically saves params as hyperparameters
         self.layer_params = layer_params
         self.model = model
 
