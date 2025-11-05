@@ -13,6 +13,7 @@ import lightning as L
 import argparse
 import os
 
+from itertools import chain
 from torchvision import models
 from torch.utils.data import Dataset, DataLoader, random_split
 from torch_datasets.imdbwiki import IMDBWIKIDataset
@@ -64,17 +65,30 @@ vgg16.classifier[6] = torch.nn.Linear(
     101,  # 101 age classes
 )
 
+# "Any fine-tuning the learning rate for all layers except the last layer is set to
+# 0.0001 [...] we set the learning rate for the output layer to 0.001"
+layer_params = [
+    {
+        "params": [p for i in range(6) for p in vgg16.classifier[i].parameters()],
+        "lr": 0.0001,
+    },
+    {"params": list(vgg16.classifier[6].parameters()), "lr": 0.001},
+]
+
 print("Starting training...")
 
 match args.method:
     case "DEX":
         model = FinetuneDEX(
-            learning_rate=args.learning_rate, batch_size=args.batch_size, model=vgg16
+            model=vgg16,
+            layer_params=layer_params,
         )
     case "MVL":
         model = FinetuneMVL(
-            learning_rate=args.learning_rate, batch_size=args.batch_size, model=vgg16
+            model=vgg16,
+            layer_params=layer_params,
         )
+
 
 # Set up saving model checkpoints
 os.makedirs("checkpoints", exist_ok=True)
@@ -85,6 +99,7 @@ checkpoint_config = ModelCheckpoint(
     monitor="val_loss",
     mode="min",
 )
+
 
 trainer = L.Trainer(
     callbacks=[EarlyStopping(monitor="val_loss", mode="min"), checkpoint_config],
