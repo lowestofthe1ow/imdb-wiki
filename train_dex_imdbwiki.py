@@ -1,3 +1,12 @@
+# train_dex_imdbwiki.py
+# Begins training the model on the IMDB-WIKI dataset based on DEX
+
+# Parameters:
+# --batch-size  Batch size
+# --workers     Number of CPU workers
+# --min-epochs  Minimum number of epochs, even if early stop is triggered
+# --max-epochs  Maximum number of epochs, even if early stop is NOT triggered
+
 import torch
 import lightning as L
 import argparse
@@ -6,7 +15,7 @@ import os
 from torchvision import models
 from torch.utils.data import Dataset, DataLoader, random_split
 from torch_datasets.imdbwiki import IMDBWIKIDataset
-from lightning_modules.finetune import Finetune
+from lightning_modules.finetune_dex import FinetuneDEX
 from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 from lightning.pytorch.callbacks import ModelCheckpoint
 
@@ -19,6 +28,7 @@ parser.add_argument("--batch-size", type=int)
 parser.add_argument("--workers", type=int)
 parser.add_argument("--min-epochs", type=int)
 parser.add_argument("--max-epochs", type=int)
+parser.add_argument("--learning-rate", type=float)
 args = parser.parse_args()
 
 # Load IMDB-WIKI data
@@ -53,8 +63,12 @@ vgg16.classifier[6] = torch.nn.Linear(
 
 print("Starting training...")
 
-model = Finetune(learning_rate=1e-3, batch_size=args.batch_size, model=vgg16)
+model = FinetuneDEX(
+    learning_rate=args.learning_rate, batch_size=args.batch_size, model=vgg16
+)
 
+# Set up saving model checkpoints
+os.makedirs("checkpoints", exist_ok=True)
 checkpoint_config = ModelCheckpoint(
     dirpath="checkpoints",
     filename="my_model_{epoch:02d}_{val_loss:.2f}",
@@ -63,12 +77,13 @@ checkpoint_config = ModelCheckpoint(
     mode="min",
 )
 
-os.makedirs("checkpoints", exist_ok=True)
 trainer = L.Trainer(
     callbacks=[EarlyStopping(monitor="val_loss", mode="min"), checkpoint_config],
     min_epochs=args.min_epochs,
     max_epochs=args.max_epochs,
 )
+
 trainer.fit(model=model, train_dataloaders=train_loader, val_dataloaders=val_loader)
 
-torch.save(model.state_dict(), "imdbwiki_dex.pth")
+# Save the final model
+torch.save(model.state_dict(), "models/imdbwiki_dex.pth")

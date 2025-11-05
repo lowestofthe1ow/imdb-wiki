@@ -1,3 +1,6 @@
+# PyTorch Lightning checkpoints
+*.ckpt
+
 # PyTorch Lightning logs
 lightning_logs/
 

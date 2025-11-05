@@ -9,9 +9,9 @@ from PIL import Image
 class IMDBWIKIDataset(Dataset):
     def __init__(self, csv, transform=None):
         self.labels = pd.read_csv(csv)
-
-        # No need to transform IMDB-WIKI samples
-        self.transform = transforms.Compose([transforms.ToTensor()])
+        self.transform = transforms.Compose(
+            [transforms.Resize((256, 256)), transforms.ToTensor()]
+        )
 
     def __len__(self):
         return len(self.labels)

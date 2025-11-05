@@ -1,10 +1,8 @@
 import torch
 import lightning as L
 
-from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 
-
-class Finetune(L.LightningModule):
+class FinetuneDEX(L.LightningModule):
     def __init__(self, learning_rate, batch_size, model):
         super().__init__()
         self.save_hyperparameters(ignore=["model"])  # Saves params as hyperparameters

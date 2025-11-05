@@ -1,3 +1,11 @@
+# csv_imdbwiki.py
+# Creates a CSV file mapping the IMDB-WIKI images to their labels
+
+# Parameters:
+# --imdb-path   Path to directory containing IMDB dataset folder
+# --wiki-path   Path to directory containing WIKI dataset folder
+
+import argparse
 import pandas as pd
 import numpy as np
 import os
@@ -8,8 +16,25 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from imblearn.under_sampling import RandomUnderSampler
 
+# Command-line arguments
+parser = argparse.ArgumentParser()
+parser.add_argument("--imdb-path", type=str)
+parser.add_argument("--wiki-path", type=str)
+args = parser.parse_args()
 
-def extract_metadata(path, var_name, path_prefix):
+
+# TODO: I'm sorry this is a mess lmao
+
+
+def extract_metadata(root, path, var_name):
+    """Extracts IMDB-WIKI data located at root/path
+
+    Args:
+        root (str): Path to directory containing the imdb_crop/ folder
+        path (str): Path to the .mat file to read metadata from
+        var_name (str): 'imdb' or 'wiki'
+    """
+
     metadata = loadmat(path, mat_dtype=False)
 
     # Extract all needed variables
@@ -25,7 +50,7 @@ def extract_metadata(path, var_name, path_prefix):
 
     # Set file paths
     df["full_path"] = df["full_path"].apply(
-        lambda x: os.path.join(path_prefix, f"{var_name}_crop", x)
+        lambda x: os.path.join(root, f"{var_name}_crop", x)
     )
 
     # Convert birthday to numeric and subtract Unix epoch datenum
@@ -57,11 +82,12 @@ def extract_metadata(path, var_name, path_prefix):
     return df
 
 
+# Separately extract data from IMDB and WIKI datasets
 metadata_imdb = extract_metadata(
-    os.path.join(sys.argv[1], "imdb_crop/imdb.mat"), "imdb", sys.argv[1]
+    args.imdb_path, os.path.join(args.imdb_path, "imdb_crop/imdb.mat"), "imdb"
 )
 metadata_wiki = extract_metadata(
-    os.path.join(sys.argv[2], "wiki_crop/wiki.mat"), "wiki", sys.argv[2]
+    args.wiki_path, os.path.join(args.wiki_path, "wiki_crop/wiki.mat"), "wiki"
 )
 
 pd.set_option("display.max_rows", None)
