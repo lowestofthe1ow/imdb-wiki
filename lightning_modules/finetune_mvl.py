@@ -36,20 +36,20 @@ class FinetuneMVL(L.LightningModule):
         return loss
 
     def configure_optimizers(self):
-        # Paper uses SGD
+        # MVL, like DEX, uses stochastic gradient descent for optimization
         optimizer = torch.optim.SGD(
-            self.model.parameters(),
-            lr=0.001,  # Fixed unlike DEX...?
-            # Paper did not specify these parameters but I think these are standard
+            self.parameters(),
+            lr=0.001,  # Fixed at 1e-3 unlike DEX
+            # Use same weight decay and momentum as in DEX, since same dataset
             weight_decay=0.0005,
             momentum=0.9,
         )
 
-        # "The learning rate is reduced every 10 passes through the entire data by a factor of 10"
+        # Multiply learning rate by 0.1 every 15 epochs (based on MVL paper)
         scheduler = StepLR(
             optimizer,
-            step_size=15,  # Paper reduces learning rate every 15 epochs for VGG-16 arch
-            gamma=0.1,  # Divide by 10 lol
+            step_size=15,
+            gamma=0.1,
         )
 
         return {

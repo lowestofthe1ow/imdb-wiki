@@ -1,5 +1,5 @@
 # train_dex_imdbwiki.py
-# Begins training the model on the IMDB-WIKI dataset based on DEX
+# Begins training the model on the IMDB-WIKI dataset based on DEX or MVL
 
 # Parameters:
 # --batch-size  Batch size
@@ -35,48 +35,55 @@ parser.add_argument("--learning-rate", type=float)
 parser.add_argument("--method", type=str)
 args = parser.parse_args()
 
-# Load IMDB-WIKI data
+
+# Load the IMDB-WIKI dataset
 dataset = IMDBWIKIDataset("data/imdbwiki.csv")
 
-# 90/10 split for training and validation
+# Do a 90/10 split for training and validation
 train_size = int(0.9 * len(dataset))
 val_size = len(dataset) - train_size
 train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
 
+# Create two separate data loaders: one for training and another for validation
 train_loader = DataLoader(
-    train_dataset, batch_size=args.batch_size, num_workers=args.workers, shuffle=True
+    train_dataset,
+    batch_size=args.batch_size,
+    num_workers=args.workers,
+    shuffle=True,  # Training data is shuffled, but not validation data
 )
-
 val_loader = DataLoader(
-    val_dataset, batch_size=args.batch_size, num_workers=args.workers
+    val_dataset,
+    batch_size=args.batch_size,
+    num_workers=args.workers,
 )
 
 print("Data loaded from /data/imdbwiki.csv.")
 
+
 # Initialize model for fine-tuning
+vgg16 = models.vgg16(weights=models.VGG16_Weights.DEFAULT)
 
-# TODO: Set to weights=VGG16_Weights.DEFAULT (?)
-vgg16 = models.vgg16(pretrained=True)
-
-# "When training for classification, the output layer is adapted to 101 output neurons
-# corresponding to natural numbers from 0 to 100..."
+# Change output layer to have 101 neurons, one for each age class
 vgg16.classifier[6] = torch.nn.Linear(
     4096,  # 4096 inputs to the final fully connected layer
     101,  # 101 age classes
 )
 
-# "Any fine-tuning the learning rate for all layers except the last layer is set to
-# 0.0001 [...] we set the learning rate for the output layer to 0.001"
+
+# USED IN DEX ONLY: All layers except the last have a learning rate of 0.0001.
+# Last layer has a learning rate of 0.001
+# Learning rate is fixed in the MVL paper
 layer_params = [
     {
+        # Flatten an iterator that goes over all the classifier layers in VGG16
         "params": [p for i in range(6) for p in vgg16.classifier[i].parameters()],
         "lr": 0.0001,
     },
     {"params": list(vgg16.classifier[6].parameters()), "lr": 0.001},
 ]
 
-print("Starting training...")
 
+# Initialize PyTorch Lightning modules depending on method used
 match args.method:
     case "DEX":
         model = FinetuneDEX(
@@ -91,20 +98,22 @@ match args.method:
 os.makedirs("checkpoints", exist_ok=True)
 checkpoint_config = ModelCheckpoint(
     dirpath="checkpoints",
-    filename="my_model_{epoch:02d}_{val_loss:.2f}",
+    filename=f"IMDBWIKI_{args.method}_{{epoch:02d}}_{{val_loss:.2f}}",
     save_top_k=1,
     monitor="val_loss",
     mode="min",
 )
 
 
+print("Starting training...")
+
+# Initialize PyTorch Lightning Trainer and begin training
 trainer = L.Trainer(
     callbacks=[EarlyStopping(monitor="val_loss", mode="min"), checkpoint_config],
     min_epochs=args.min_epochs,
     max_epochs=args.max_epochs,
 )
-
 trainer.fit(model=model, train_dataloaders=train_loader, val_dataloaders=val_loader)
 
-# Save the final model
-torch.save(model.state_dict(), "models/imdbwiki_dex.pth")
+# Save the final model state dict (.pth file) to be safe.
+torch.save(model.state_dict(), "checkpoints/imdbwiki_dex.pth")

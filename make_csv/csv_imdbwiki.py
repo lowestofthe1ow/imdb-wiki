@@ -23,9 +23,6 @@ parser.add_argument("--wiki-path", type=str)
 args = parser.parse_args()
 
 
-# TODO: I'm sorry this is a mess lmao
-
-
 def extract_metadata(root, path, var_name):
     """Extracts IMDB-WIKI data located at root/path
 
@@ -82,29 +79,27 @@ def extract_metadata(root, path, var_name):
     return df
 
 
-# Separately extract data from IMDB and WIKI datasets
+# Extract metadata from both IMDB and WIKI datasets then concatenate
 metadata_imdb = extract_metadata(
     args.imdb_path, os.path.join(args.imdb_path, "imdb_crop/imdb.mat"), "imdb"
 )
 metadata_wiki = extract_metadata(
     args.wiki_path, os.path.join(args.wiki_path, "wiki_crop/wiki.mat"), "wiki"
 )
-
-pd.set_option("display.max_rows", None)
-pd.set_option("display.max_columns", None)
-
 metadata = pd.concat([metadata_imdb, metadata_wiki])
 
+
+# Downsample the dataset to balance age classes
+# DEX conference paper simply discarded from the most populous age groups
 print(
     f"Total number of images: {len(metadata)} ({len(metadata_imdb)} IMDB; {len(metadata_wiki)} WIKI)"
 )
 print("Downsampling...")
 
-# I'm aware this is questionable but well... calculates the target sizes for each age class
 TOTAL_SAMPLES = 260282  # DEX paper used this many samples for training
 sizes = metadata.groupby("age").size()
 
-# Discard from largest class every time
+# Obtain target sizes for each class by decrementing from most populous age groups
 while sizes.sum() > TOTAL_SAMPLES:
     sizes[sizes.idxmax()] -= 1
 
@@ -121,6 +116,7 @@ X_resampled_df = pd.DataFrame(X_resampled, columns=X.columns)
 y_resampled_df = pd.Series(y_resampled, name="age")
 
 metadata_downsized = pd.concat([X_resampled_df, y_resampled_df], axis=1).sort_index()
+
 
 # Write to CSV file
 os.makedirs("data", exist_ok=True)

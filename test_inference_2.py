@@ -1,11 +1,11 @@
 import torch
 from torchvision import models
 from PIL import Image
-from lightning_modules.finetune_dex import FinetuneDEX
+from lightning_modules.finetune_mvl import FinetuneMVL
 from torchvision.models import VGG16_Weights
 import torchvision.transforms as transforms
 
-image = Image.open("test.jpg").convert("RGB")
+image = Image.open("data/wiki_crop/77/10007577_1988-06-16_2007.jpg").convert("RGB")
 transform = transforms.Compose(
     [
         transforms.Resize((256, 256)),
@@ -22,11 +22,8 @@ vgg16 = models.vgg16(pretrained=True)
 # corresponding to natural numbers from 0 to 100..."
 vgg16.classifier[6] = torch.nn.Linear(4096, 101)
 
-model = FinetuneDEX.load_from_checkpoint(
-    "my_model_epoch=09_val_loss=0.00.ckpt",
-    model=vgg16,
-    batch_size=128,
-    learning_rate=1e-3,
+model = FinetuneMVL.load_from_checkpoint(
+    "my_model_epoch=00_val_loss=0.00.ckpt", model=vgg16, batch_size=128
 )
 model.eval()
 
