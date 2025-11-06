@@ -18,6 +18,7 @@ class MeanVarianceLoss(torch.nn.Module):
 
         # Generate age range tensor and move it to CUDA device (i.e. the GPU; required
         # for training)
+        assert torch.cuda.is_available()
         self.age_range = torch.arange(101).float().to("cuda")
 
     def forward(self, input, target):
