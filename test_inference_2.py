@@ -22,8 +22,10 @@ vgg16 = models.vgg16(pretrained=True)
 # corresponding to natural numbers from 0 to 100..."
 vgg16.classifier[6] = torch.nn.Linear(4096, 101)
 
+# CHECKPOINT = "my_model_epoch=09_val_loss=0.00.ckpt"
+CHECKPOINT = "my_model_epoch=00_val_loss=0.00.ckpt"
 model = FinetuneDEX.load_from_checkpoint(
-    "my_model_epoch=09_val_loss=0.00.ckpt",
+    CHECKPOINT,
     model=vgg16,
     batch_size=128,
     learning_rate=1e-3,

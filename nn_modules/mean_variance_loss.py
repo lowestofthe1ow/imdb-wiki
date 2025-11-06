@@ -1,6 +1,5 @@
 import torch
 
-
 class MeanVarianceLoss(torch.nn.Module):
     def __init__(self, lm1, lm2):
         super().__init__()
@@ -10,7 +9,7 @@ class MeanVarianceLoss(torch.nn.Module):
         self.lm1 = lm1
         self.lm2 = lm2
 
-        # TODO: Check if CUDA is available first but like... lol
+        assert torch.cuda.is_available()
         self.age_range = torch.arange(101).float().to("cuda")
 
         print()

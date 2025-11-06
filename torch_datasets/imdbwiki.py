@@ -17,7 +17,7 @@ class IMDBWIKIDataset(Dataset):
         return len(self.labels)
 
     def __getitem__(self, index):
-        image = Image.open(self.labels.iloc[0]["full_path"])
-        label = self.labels.iloc[0]["age"]
+        image = Image.open(self.labels.iloc[index]["full_path"])
+        label = self.labels.iloc[index]["age"]
 
         return self.transform(image), label
