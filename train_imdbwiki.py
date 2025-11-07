@@ -69,6 +69,9 @@ vgg16.classifier[6] = torch.nn.Linear(
     101,  # 101 age classes
 )
 
+# Freeze feature extraction layers
+for param in vgg16.features.parameters():
+    param.requires_grad = False
 
 # USED IN DEX ONLY: All layers except the last have a learning rate of 0.0001.
 # Last layer has a learning rate of 0.001
