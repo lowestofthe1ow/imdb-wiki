@@ -1,53 +1,40 @@
-import cv2
-import pandas as pd
+import torch
+from torchvision import models
+from PIL import Image
+from lightning_modules.finetune_mvl import FinetuneMVL
+from torchvision.models import VGG16_Weights
+import torchvision.transforms as transforms
 
-model = "dex_imdb_wiki.caffemodel"
-proto = "age.prototxt"
+image = Image.open("data/wiki_crop/77/10007577_1988-06-16_2007.jpg").convert("RGB")
+transform = transforms.Compose(
+    [
+        transforms.Resize((256, 256)),
+        transforms.CenterCrop((224, 224)),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ]
+)
 
-# The paper did not give specific mean values for the network
-# I found these from looking up "ImageNet mean values" and they seem to work
-mean = (0.485, 0.456, 0.406)
+# TODO: Set to weights=VGG16_Weights.DEFAULT (?)
+vgg16 = models.vgg16(pretrained=True)
 
-# Paper used a MATLAB script for extracting faces from an image
-# I'm too lazy to set that up right now so manual cropping it is
-# Input layer has to be 224x224
-input_size = (224, 224)
+# "When training for classification, the output layer is adapted to 101 output neurons
+# corresponding to natural numbers from 0 to 100..."
+vgg16.classifier[6] = torch.nn.Linear(4096, 101)
 
-age_net = cv2.dnn.readNetFromCaffe(proto, model)
+# CHECKPOINT = "my_model_epoch=09_val_loss=0.00.ckpt"
+CHECKPOINT = "my_model_epoch=00_val_loss=0.00.ckpt"
+model = FinetuneMVL.load_from_checkpoint(CHECKPOINT, model=vgg16, batch_size=128)
+model.eval()
 
+with torch.no_grad():
+    output = model(torch.unsqueeze(transform(image), 0).to("cuda")).to("cpu")
 
-def predict_age(image_path):
-    image = cv2.imread(image_path)
+    prob = torch.nn.functional.softmax(output, dim=1)[0]
 
-    if image is None:
-        raise FileNotFoundError(f"Error loading file at {image_path}")
-        exit()
-
-    blob = cv2.dnn.blobFromImage(
-        image,
-        # If we normalize to 255 it starts saying I'm 40 years old so it stays 1.0
-        scalefactor=1.0,  # 1.0 / 255.0,
-        size=input_size,
-        mean=mean,
-        swapRB=False,  # I'm pretty sure we dont need to go from RGB to BGR
-        crop=False,
-    )
-
-    age_net.setInput(blob)
-
-    # Do a single forward pass through the network
-    # Result is a softmax vector showing probability distribution for ages 1 to 101
-    predictions = age_net.forward()
-
-    age_range = range(1, 102)  # [1, 2, ..., 101]
+    age_range = torch.arange(1, 102)  # [1, 2, ..., 101]
 
     # Get weighted sum of ages to arrive at a single age estimate
-    estimated_age = (predictions * age_range).sum()
+    estimated_age = (prob * age_range).sum()
 
-    return estimated_age
-
-
-images = pd.DataFrame({"files": ["test1.jpg", "test2.jpg"]})
-images["predicted_age"] = images["files"].apply(predict_age)
-
-print(images)
+    print(estimated_age)
