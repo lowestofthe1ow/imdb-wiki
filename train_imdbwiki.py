@@ -33,6 +33,7 @@ parser.add_argument("--min-epochs", type=int)
 parser.add_argument("--max-epochs", type=int)
 parser.add_argument("--learning-rate", type=float)
 parser.add_argument("--method", type=str)
+parser.add_argument("--checkpoint-path", type=str)
 args = parser.parse_args()
 
 
@@ -85,17 +86,24 @@ layer_params = [
     {"params": list(vgg16.classifier[6].parameters()), "lr": 0.001},
 ]
 
-
 # Initialize PyTorch Lightning modules depending on method used
-match args.method:
-    case "DEX":
-        model = FinetuneDEX(
-            model=vgg16,
-            layer_params=layer_params,
-        )
-    case "MVL":
-        model = FinetuneMVL(model=vgg16)
-
+if args.checkpoint_path:
+    print(".ckpt file provided. Preparing for further training...")
+    match args.method:
+        case "DEX":
+            model = FinetuneDEX.load_from_checkpoint(args.checkpoint_path)
+        case "MVL":
+            model = FinetuneMVL.load_from_checkpoint(args.checkpoint_path, model=vgg16)
+else:
+    print("No .ckpt file provided. Training from default weights...")
+    match args.method:
+        case "DEX":
+            model = FinetuneDEX(
+                model=vgg16,
+                layer_params=layer_params,
+            )
+        case "MVL":
+            model = FinetuneMVL(model=vgg16)
 
 # Set up saving model checkpoints
 os.makedirs("checkpoints", exist_ok=True)
