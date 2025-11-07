@@ -26,7 +26,7 @@ class APPAREALDataset(Dataset):
                 transforms.Resize((256, 256)),
                 # Convert to the PIL.Image object to tensor (required)
                 transforms.ToTensor(),
-                # Normalize to ImageNet mean
+                # Normalize to ImageNet mean (to align with previous DEX)
                 transforms.Normalize(mean=imagenet_mean, std=imagenet_std),
             ]
         )
