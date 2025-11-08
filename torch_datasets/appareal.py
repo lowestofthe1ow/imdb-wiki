@@ -21,6 +21,7 @@ class APPAREALDataset(Dataset):
                         and gt_avg_valid.csv -- are used for this purpose.
         """
         self.csv_path = csv_path
+        self.set_type = csv_path.split("_")[-1].split('.')[0] # test, train, valid
         self.labels = pd.read_csv(csv_path)
         self.transform = transforms.Compose(
             [
@@ -42,7 +43,7 @@ class APPAREALDataset(Dataset):
         Returns tensor representation of the Image and apparent age given index
         ! We assume the folder to the images is in the same folder as the csv_path provided
         """
-        file_name = Path(self.csv_path).parent / self.labels.iloc[index]['file_name']
+        file_name = Path(self.csv_path).parent / self.set_type / self.labels.iloc[index]['file_name']
         image = Image.open(file_name).convert("RGB")
         label = self.labels.iloc[index]["apparent_age_avg"]
 
