@@ -70,7 +70,10 @@ match args.method:
     case "DEX":
         model = FinetuneDEX.load_from_checkpoint(args.checkpoint_path)
     case "MVL":
-        model = FinetuneMVL.load_from_checkpoint(args.checkpoint_path)
+        model = FinetuneMVL.load_from_checkpoint(args.checkpoint_path, requires_grad=False)
+
+for param in model.features.parameters():
+    param.requires_grad = False
 
 # Set up saving model checkpoints
 os.makedirs("checkpoints", exist_ok=True)
