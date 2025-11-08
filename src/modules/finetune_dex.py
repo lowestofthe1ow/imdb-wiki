@@ -9,7 +9,7 @@ class FinetuneDEX(L.LightningModule):
     PyTorch Lightning module for fine-tuning a model using DEX configurations.
     """
 
-    def __init__(self, layer_params, model):
+    def __init__(self, model):
         """Initializes the module.
 
         Args:
@@ -21,7 +21,6 @@ class FinetuneDEX(L.LightningModule):
         """
         super().__init__()
 
-        self.layer_params = layer_params
         self.model = model
 
         # Cross-entropy loss for classification
@@ -51,7 +50,9 @@ class FinetuneDEX(L.LightningModule):
     def configure_optimizers(self):
         # DEX uses stochastic gradient descent for optimization
         optimizer = torch.optim.SGD(
-            self.layer_params,
+            self.parameters(),
+            lr=0.0001,  # Trying to fix at 1e-4
+            # Use same weight decay and momentum as in DEX, since same dataset
             weight_decay=0.0005,
             momentum=0.9,
         )
