@@ -23,7 +23,7 @@ class APPAREALDataset(Dataset):
         self.csv_path = csv_path
         self.set_type = csv_path.split("_")[-1].split('.')[0] # test, train, valid
         self.labels = pd.read_csv(csv_path)
-        self.labels["apparent_age_avg"] = self.labels["apparent_age_avg"].astype("float32")
+        self.labels["apparent_age_avg"] = self.labels["apparent_age_avg"].round().astype("int")
         self.transform = transforms.Compose(
             [
                 # Resize to 256x256 to align with previous DEX
