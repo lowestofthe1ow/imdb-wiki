@@ -1,3 +1,4 @@
+from pathlib import Path
 import pandas as pd
 import torch
 import torchvision.transforms as transforms
@@ -38,8 +39,9 @@ class APPAREALDataset(Dataset):
     def __getitem__(self, index) -> tuple[Image.Image, int]:
         """
         Returns tensor representation of the Image and apparent age given index
+        ! We assume the folder to the images is in the same folder as the csv_path provided
         """
-        file_name = self.labels.iloc[index]['file_name']
+        file_name = Path(self.csv_path).parent / self.labels.iloc[index]['file_name']
         image = Image.open(file_name).convert("RGB")
         label = self.labels.iloc[index]["apparent_age_avg"]
 
