@@ -30,30 +30,27 @@ class MeanVarianceLoss(torch.nn.Module):
             target: True ages for the images in the batch (labels)
         """
 
-        # Softmax over the output (should be a fully-connected layer)
-        # Predicted probability distribution for each image in a batch (dim=1)
-        prob = torch.nn.functional.softmax(input, dim=1)
+        # --------------------
 
-        # m_i = Σ_{j=1}^K j * p_{i,j}
-        # Mean of estimated distribution is softmax expected value like in DEX
-        # Note that this broadcasts to each image in a batch
-        mean = torch.sum(prob * self.age_range, dim=1)
+        # TODO: This implementation uses code from:
+        # https://www.github-zh.com/projects/199231717-ageestimation
 
-        # Mean loss L_m
-        # Penalizes the difference between the mean of an estimated age distribution
-        # and the ground-truth age, calculated as L2 distance (MSE loss) between mean
-        # m_i and target.
-        mean_loss = 0.5 * torch.nn.functional.mse_loss(mean, target.float())
+        N = input.size()[0]
+        fl_target = target.type(torch.FloatTensor).cuda()
+        m = torch.nn.Softmax(dim=1)
+        p = m(input)
 
-        # Variance loss L_v
-        # v_i = Σ_{j=1}^K p_{i,j} * (j - m_i)^2
-        # Penalizes the dispersion of an estimated age distribution.
-        # The variance loss L_v for a batch is the mean of the variances v_i for each
-        # image's estimated distribution.
-        variance_loss = torch.mean(
-            # Unsqueeze to broadcast
-            torch.sum(prob * (self.age_range - mean.unsqueeze(1)) ** 2, dim=1)
-        )
+        # Mean loss
+        a = torch.arange(101, dtype=torch.float32).cuda()
+        mean = torch.squeeze((p * a).sum(1, keepdim=True), dim=1)
+        mse = (mean - fl_target) ** 2
+        mean_loss = mse.mean() / 2.0
+
+        # Variance loss
+        b = (a[None, :] - mean[:, None]) ** 2
+        variance_loss = (p * b).sum(1, keepdim=True).mean()
+
+        # --------------------
 
         # Softmax (cross-entropy) loss L_s
         # Initialize the loss function (CrossEntropyLoss is an object; we need to do
