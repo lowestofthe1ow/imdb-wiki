@@ -26,6 +26,8 @@ class IMDBWIKIDataset(Dataset):
             [
                 # Resize to 256x256 as specified by DEX
                 transforms.Resize((256, 256)),
+                # Center crop to 224x224
+                transforms.CenterCrop(224),
                 # Convert to the PIL.Image object to tensor (required)
                 transforms.ToTensor(),
                 # Normalize to ImageNet mean
