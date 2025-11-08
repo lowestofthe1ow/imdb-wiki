@@ -20,6 +20,7 @@ class APPAREALDataset(Dataset):
                         Three CSV files -- gt_avg_test.csv, gt_avg_train.csv
                         and gt_avg_valid.csv -- are used for this purpose.
         """
+        self.csv_path = csv_path
         self.labels = pd.read_csv(csv_path)
         self.transform = transforms.Compose(
             [
