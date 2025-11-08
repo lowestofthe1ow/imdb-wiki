@@ -101,9 +101,6 @@ match args.method:
     case "MVL":
         model = FinetuneMVL.load_from_checkpoint(args.checkpoint_path, model=vgg16)
 
-for param in model.model.feature.parameters():
-    param.requires_grad = False
-
 # Set up saving model checkpoints
 os.makedirs("checkpoints", exist_ok=True)
 old_checkpoint = Path(args.checkpoint_path).name
