@@ -1,1 +1,1 @@
-python3 finetune_with_appareal.py --batch-size 64 --workers 4 --min-epochs 0 --max-epochs 200 --method "MVL" --csv-path "" --checkpoint-path "../input/imdb-wiki-dex-mvl/pytorch/default/1/IMDBWIKI_MVL_epoch04_val_loss20.49.ckpt"
+python3 finetune_with_appareal.py --batch-size 64 --workers 4 --min-epochs 0 --max-epochs 200 --method "MVL" --csv-path "../input/appa-real/appa-real-release/gt_avg_train.csv" --checkpoint-path "../input/imdb-wiki-dex-mvl/pytorch/default/1/IMDBWIKI_MVL_epoch04_val_loss20.49.ckpt"
