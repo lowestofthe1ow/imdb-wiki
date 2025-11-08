@@ -65,14 +65,43 @@ val_loader = DataLoader(
 print(f"Data loaded from {args.csv_path}.")
 
 
+# Initialize model for fine-tuning
+vgg16 = models.vgg16(weights=models.VGG16_Weights.DEFAULT)
+
+# Change output layer to have 101 neurons, one for each age class
+vgg16.classifier[6] = torch.nn.Linear(
+    4096,  # 4096 inputs to the final fully connected layer
+    101,  # 101 age classes
+)
+
+# Freeze feature extraction layers
+for param in vgg16.features.parameters():
+    param.requires_grad = False
+
+# USED IN DEX ONLY: All layers except the last have a learning rate of 0.0001.
+# Last layer has a learning rate of 0.001
+# Learning rate is fixed in the MVL paper
+layer_params = [
+    {
+        # Flatten an iterator that goes over all the classifier layers in VGG16
+        "params": [p for i in range(6) for p in vgg16.classifier[i].parameters()],
+        "lr": 0.0001,
+    },
+    {"params": list(vgg16.classifier[6].parameters()), "lr": 0.001},
+]
+
 # Initialize PyTorch Lightning modules depending on method used
 match args.method:
     case "DEX":
-        model = FinetuneDEX.load_from_checkpoint(args.checkpoint_path)
+        model = FinetuneDEX.load_from_checkpoint(
+            args.checkpoint_path,
+            model=vgg16,
+            layer_params=layer_params,
+        )
     case "MVL":
-        model = FinetuneMVL.load_from_checkpoint(args.checkpoint_path, requires_grad=False)
+        model = FinetuneMVL.load_from_checkpoint(args.checkpoint_path, model=vgg16)
 
-for param in model.features.parameters():
+for param in model.model.feature.parameters():
     param.requires_grad = False
 
 # Set up saving model checkpoints
