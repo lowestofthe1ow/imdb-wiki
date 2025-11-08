@@ -91,7 +91,11 @@ if args.checkpoint_path:
     print(".ckpt file provided. Preparing for further training...")
     match args.method:
         case "DEX":
-            model = FinetuneDEX.load_from_checkpoint(args.checkpoint_path)
+            model = FinetuneDEX.load_from_checkpoint(
+                args.checkpoint_path,
+                model=vgg16,
+                layer_params=layer_params,
+            )
         case "MVL":
             model = FinetuneMVL.load_from_checkpoint(args.checkpoint_path, model=vgg16)
 else:
