@@ -76,6 +76,10 @@ vgg16.classifier[6] = torch.nn.Linear(
 for param in vgg16.features.parameters():
     param.requires_grad = False
 
+# Unfreeze later convolutional layers
+for param in vgg16.features[10:].parameters():
+    param.requires_grad = True
+
 # Initialize PyTorch Lightning module
 match args.method:
     case "DEX":
