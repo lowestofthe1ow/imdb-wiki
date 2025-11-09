@@ -36,7 +36,7 @@ class FinetuneDEX(L.LightningModule):
                 # Final classifier layer (6)
                 # Higher LR for randomly initialized weights
                 "params": list(model.classifier[6].parameters()),
-                "lr": 0.0005,
+                "lr": 0.001,
             },
         ]
 
