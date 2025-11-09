@@ -34,11 +34,13 @@ parser.add_argument("--max-epochs", type=int)
 parser.add_argument("--learning-rate", type=float)
 parser.add_argument("--method", type=str)
 parser.add_argument("--checkpoint-path", type=str)
+parser.add_argument("--csv-path", type=str)
+parser.add_argument("--data-path", type=str)
 args = parser.parse_args()
 
 
 # Load the IMDB-WIKI dataset
-dataset = IMDBWIKIDataset("data/imdbwiki.csv")
+dataset = IMDBWIKIDataset(args.csv_path, args.data_path)
 
 # Do a 90/10 split for training and validation
 train_size = int(0.9 * len(dataset))
