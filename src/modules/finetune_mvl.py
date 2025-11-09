@@ -37,12 +37,12 @@ class FinetuneMVL(L.LightningModule):
 
     def configure_optimizers(self):
         # MVL, like DEX, uses stochastic gradient descent for optimization
-        optimizer = torch.optim.SGD(
+        # ...but let's try AdamW
+        optimizer = torch.optim.AdamW(
             self.parameters(),
             lr=0.001,  # Fixed at 1e-3 unlike DEX
             # Use same weight decay and momentum as in DEX, since same dataset
             weight_decay=0.0005,
-            # momentum=0.9,
         )
 
         # Multiply learning rate by 0.1 every 15 epochs (based on MVL paper)

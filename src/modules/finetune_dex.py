@@ -36,7 +36,7 @@ class FinetuneDEX(L.LightningModule):
                 # Final classifier layer (6)
                 # Higher LR for randomly initialized weights
                 "params": list(model.classifier[6].parameters()),
-                "lr": 0.0005,
+                "lr": 0.001,
             },
         ]
 
@@ -66,11 +66,11 @@ class FinetuneDEX(L.LightningModule):
 
     def configure_optimizers(self):
         # DEX uses stochastic gradient descent for optimization
-        optimizer = torch.optim.SGD(
+        # ...but let's try AdamW
+        optimizer = torch.optim.AdamW(
             self.layer_params,
             # Use same weight decay and momentum as in DEX, since same dataset
             weight_decay=0.0005,
-            momentum=0.9,
         )
 
         # Multiply learning rate by 0.1 every 10 epochs
