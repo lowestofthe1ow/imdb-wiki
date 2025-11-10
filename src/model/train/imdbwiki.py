@@ -67,8 +67,6 @@ val_loader = DataLoader(
     num_workers=args.workers,
 )
 
-print("Data loaded from /data/imdbwiki.csv.")
-
 
 # Balance class weights
 age_classes = np.arange(101)
@@ -89,6 +87,16 @@ vgg16.classifier[6] = torch.nn.Linear(
     4096,  # 4096 inputs to the final fully connected layer
     101,  # 101 age classes
 )
+
+# Freeze feature extraction layers
+for param in vgg16.features.parameters():
+    param.requires_grad = False
+
+# Unfreeze later convolutional layers
+for param in vgg16.features[10:].parameters():
+    param.requires_grad = True
+
+print("Data loaded from /data/imdbwiki.csv.")
 
 # Initialize PyTorch Lightning module
 match args.method:

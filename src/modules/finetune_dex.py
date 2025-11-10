@@ -47,7 +47,9 @@ class FinetuneDEX(L.LightningModule):
         weights_tensor = torch.from_numpy(class_weights).float().to("cuda")
 
         # Cross-entropy loss for classification
-        self.criterion = torch.nn.CrossEntropyLoss(weight=weights_tensor)
+        self.criterion = torch.nn.CrossEntropyLoss(
+            # weight=weights_tensor
+        )
 
         # Replicate Caffe behavior
         torch.nn.init.normal_(model.classifier[6].weight, mean=0.0, std=0.01)
@@ -77,9 +79,9 @@ class FinetuneDEX(L.LightningModule):
     def configure_optimizers(self):
         # DEX uses stochastic gradient descent for optimization
         # ...but let's try AdamW
-        optimizer = torch.optim.SGD(
+        optimizer = torch.optim.AdamW(
             self.layer_params,
-            momentum=0.9,
+            # momentum=0.9,
         )
 
         # Multiply learning rate by 0.1 every 10 epochs
