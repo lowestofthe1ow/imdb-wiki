@@ -43,11 +43,16 @@ args = parser.parse_args()
 
 # Load the IMDB-WIKI dataset
 dataset = IMDBWIKIDataset(args.csv_path, args.data_path)
+# Set up another for validation (using CenterCrop instead of RandomCrop)
+dataset_notrain = IMDBWIKIDataset(args.csv_path, args.data_path, train=False)
 
 # Do a 90/10 split for training and validation
 train_size = int(0.9 * len(dataset))
 val_size = len(dataset) - train_size
 train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
+
+# Set the validation dataset configuration
+val_dataset.dataset = dataset_notrain
 
 # Create two separate data loaders: one for training and another for validation
 train_loader = DataLoader(
@@ -84,14 +89,6 @@ vgg16.classifier[6] = torch.nn.Linear(
     4096,  # 4096 inputs to the final fully connected layer
     101,  # 101 age classes
 )
-
-# Freeze feature extraction layers
-for param in vgg16.features.parameters():
-    param.requires_grad = False
-
-# Unfreeze later convolutional layers
-for param in vgg16.features[10:].parameters():
-    param.requires_grad = True
 
 # Initialize PyTorch Lightning module
 match args.method:

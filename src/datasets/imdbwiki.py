@@ -14,7 +14,7 @@ imagenet_std = [0.229, 0.224, 0.225]
 class IMDBWIKIDataset(Dataset):
     """Torch Dataset object for IMDB-WIKI"""
 
-    def __init__(self, csv, path_prefix):
+    def __init__(self, csv, path_prefix, train=True):
         """Initializes the dataset
 
         Args:
@@ -30,20 +30,34 @@ class IMDBWIKIDataset(Dataset):
             lambda x: os.path.join(path_prefix, x)
         )
 
-        self.transform = transforms.Compose(
-            [
-                # Resize to 256x256 as specified by DEX
-                transforms.Resize((256, 256)),
-                # Random crop to 224x224
-                transforms.RandomCrop(224),
-                # Randomly mirror the image
-                transforms.RandomHorizontalFlip(),
-                # Convert to the PIL.Image object to tensor (required)
-                transforms.ToTensor(),
-                # Normalize to ImageNet mean
-                transforms.Normalize(mean=imagenet_mean, std=[1.0, 1.0, 1.0]),
-            ]
-        )
+        if train:
+            self.transform = transforms.Compose(
+                [
+                    # Resize to 256x256 as specified by DEX
+                    transforms.Resize((256, 256)),
+                    # Random crop to 224x224
+                    transforms.RandomCrop(224),
+                    # Randomly mirror the image
+                    transforms.RandomHorizontalFlip(),
+                    # Convert to the PIL.Image object to tensor (required)
+                    transforms.ToTensor(),
+                    # Normalize to ImageNet mean
+                    transforms.Normalize(mean=imagenet_mean, std=[1.0, 1.0, 1.0]),
+                ]
+            )
+        else:
+            self.transform = transforms.Compose(
+                [
+                    # Resize to 256x256 as specified by DEX
+                    transforms.Resize((256, 256)),
+                    # Random crop to 224x224
+                    transforms.CenterCrop(224),
+                    # Convert to the PIL.Image object to tensor (required)
+                    transforms.ToTensor(),
+                    # Normalize to ImageNet mean
+                    transforms.Normalize(mean=imagenet_mean, std=[1.0, 1.0, 1.0]),
+                ]
+            )
 
     def __len__(self):
         """Returns the size of the dataset"""

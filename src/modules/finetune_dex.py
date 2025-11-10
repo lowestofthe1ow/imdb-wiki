@@ -47,10 +47,7 @@ class FinetuneDEX(L.LightningModule):
         weights_tensor = torch.from_numpy(class_weights).float().to("cuda")
 
         # Cross-entropy loss for classification
-        self.criterion = torch.nn.CrossEntropyLoss(
-            # Disabled weights for now
-            # weight=weights_tensor
-        )
+        self.criterion = torch.nn.CrossEntropyLoss(weight=weights_tensor)
 
         # Replicate Caffe behavior
         torch.nn.init.normal_(model.classifier[6].weight, mean=0.0, std=0.01)
