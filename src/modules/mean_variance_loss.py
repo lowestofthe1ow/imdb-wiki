@@ -4,7 +4,7 @@ import torch
 class MeanVarianceLoss(torch.nn.Module):
     """Torch NN loss function module that implements mean-variance loss"""
 
-    def __init__(self, lm1, lm2, weights_tensor):
+    def __init__(self, lm1, lm2):
         """Initializes the module
 
         Args:
@@ -55,7 +55,7 @@ class MeanVarianceLoss(torch.nn.Module):
         # Softmax (cross-entropy) loss L_s
         # Initialize the loss function (CrossEntropyLoss is an object; we need to do
         # this separately)
-        _softmax_loss = torch.nn.CrossEntropyLoss(weight=weights_tensor)
+        _softmax_loss = torch.nn.CrossEntropyLoss()
         # Calculate the softmax loss
         softmax_loss = _softmax_loss(input, target)
 

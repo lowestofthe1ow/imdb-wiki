@@ -6,17 +6,20 @@ from torch.optim.lr_scheduler import StepLR
 
 
 class FinetuneMVL(L.LightningModule):
-    def __init__(self, model, class_weights):
+    def __init__(self, model):
+        """Initializes the module.
+
+        Args:
+            model:  The base model object to fine-tune
+        """
+
         super().__init__()
 
         self.model = model
 
-        # Convert weights array into a tensor and move to CUDA device
-        weights_tensor = torch.from_numpy(class_weights).float().to("cuda")
-
         # Cross-entropy loss for classification
         # Paper used λ_1 = 0.2 and λ_1 = 0.05
-        self.criterion = MeanVarianceLoss(0.2, 0.05, weights_tensor)
+        self.criterion = MeanVarianceLoss(0.2, 0.05)
 
     def forward(self, x):
         # Do a forward pass through the model
@@ -40,13 +43,11 @@ class FinetuneMVL(L.LightningModule):
 
     def configure_optimizers(self):
         # MVL, like DEX, uses stochastic gradient descent for optimization
-        # ...but let's try AdamW
         optimizer = torch.optim.SGD(
             self.parameters(),
-            lr=0.001,  # Fixed at 1e-3 unlike DEX
-            # Use same weight decay and momentum as in DEX, since same dataset
+            lr=0.0001,
             weight_decay=0.0005,
-            momentum=0.7,
+            momentum=0.9,
         )
 
         # Multiply learning rate by 0.1 every 15 epochs (based on MVL paper)

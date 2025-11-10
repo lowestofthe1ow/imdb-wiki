@@ -9,47 +9,45 @@ class FinetuneDEX(L.LightningModule):
     PyTorch Lightning module for fine-tuning a model using DEX configurations.
     """
 
-    def __init__(self, model, class_weights):
+    def __init__(self, model):
         """Initializes the module.
 
         Args:
-            layer_params:   Dict of parameter ("layer") groups with specific
-                            configurations for each. In the case of DEX, learning rate
-                            is 0.0001 for all layers except the last, which has it set
-                            to 0.001
-            model:          The base model object to fine-tune
+            model:  The base model object to fine-tune
         """
         super().__init__()
 
         self.model = model
 
+        # Made to replicate the original paper's configurations:
+        # https://data.vision.ee.ethz.ch/cvl/rrothe/imdb-wiki/static/age_train.prototxt
         self.layer_params = [
-            {
+            {  # All feature extraction layers have 1e-4 learning rate
+                "params": [p for p in model.features.parameters()],
+                "lr": 0.0001,
+                "weight_decay": 0.0005,
+            },
+            {  # All classification layers except the last have 1e-4 learning rate
                 "params": [
                     p for i in range(6) for p in model.classifier[i].parameters()
                 ],
                 "lr": 0.0001,
                 "weight_decay": 0.0005,
             },
-            {
+            {  # Weights for last layer has 1e-3 learning rate
                 "params": [model.classifier[6].weight],
                 "lr": 0.001,
                 "weight_decay": 0.0005,
             },
-            {
+            {  # Weights for last layer has 2e-3 learning rate and weight decay set to 0
                 "params": [model.classifier[6].bias],
                 "lr": 0.002,
                 "weight_decay": 0.0,
             },
         ]
 
-        # Convert weights array into a tensor and move to CUDA device
-        weights_tensor = torch.from_numpy(class_weights).float().to("cuda")
-
         # Cross-entropy loss for classification
-        self.criterion = torch.nn.CrossEntropyLoss(
-            # weight=weights_tensor
-        )
+        self.criterion = torch.nn.CrossEntropyLoss()
 
         # Replicate Caffe behavior
         torch.nn.init.normal_(model.classifier[6].weight, mean=0.0, std=0.01)
@@ -78,10 +76,9 @@ class FinetuneDEX(L.LightningModule):
 
     def configure_optimizers(self):
         # DEX uses stochastic gradient descent for optimization
-        # ...but let's try AdamW
-        optimizer = torch.optim.AdamW(
+        optimizer = torch.optim.SGD(
             self.layer_params,
-            # momentum=0.9,
+            momentum=0.9,
         )
 
         # Multiply learning rate by 0.1 every 10 epochs

@@ -43,16 +43,15 @@ args = parser.parse_args()
 
 # Load the IMDB-WIKI dataset
 dataset = IMDBWIKIDataset(args.csv_path, args.data_path)
-# Set up another for validation (using CenterCrop instead of RandomCrop)
-dataset_notrain = IMDBWIKIDataset(args.csv_path, args.data_path, train=False)
 
 # Do a 90/10 split for training and validation
 train_size = int(0.9 * len(dataset))
 val_size = len(dataset) - train_size
 train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
 
-# Set the validation dataset configuration
-val_dataset.dataset = dataset_notrain
+# Set the validation subset to use a different configuration
+# Uses center crop instead of random crop and without random mirroring
+val_dataset.dataset = IMDBWIKIDataset(args.csv_path, args.data_path, train=False)
 
 # Create two separate data loaders: one for training and another for validation
 train_loader = DataLoader(
@@ -67,18 +66,6 @@ val_loader = DataLoader(
     num_workers=args.workers,
 )
 
-
-# Balance class weights
-age_classes = np.arange(101)
-age_labels = train_dataset.dataset.image_data.iloc[train_dataset.indices]["age"].values
-
-# 2. Calculate the balanced class weights
-# 'balanced' uses the formula mentioned above.
-weights = compute_class_weight(
-    class_weight="balanced", classes=age_classes, y=age_labels
-)
-
-
 # Initialize model for fine-tuning
 vgg16 = models.vgg16(weights=models.VGG16_Weights.DEFAULT)
 
@@ -88,22 +75,14 @@ vgg16.classifier[6] = torch.nn.Linear(
     101,  # 101 age classes
 )
 
-# Freeze feature extraction layers
-for param in vgg16.features.parameters():
-    param.requires_grad = False
-
-# Unfreeze later convolutional layers
-for param in vgg16.features[10:].parameters():
-    param.requires_grad = True
-
 print("Data loaded from /data/imdbwiki.csv.")
 
 # Initialize PyTorch Lightning module
 match args.method:
     case "DEX":
-        model = FinetuneDEX(model=vgg16, class_weights=weights)
+        model = FinetuneDEX(model=vgg16)
     case "MVL":
-        model = FinetuneMVL(model=vgg16, class_weights=weights)
+        model = FinetuneMVL(model=vgg16)
 
 
 # Set up saving model checkpoints
