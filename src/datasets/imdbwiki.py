@@ -34,12 +34,14 @@ class IMDBWIKIDataset(Dataset):
             [
                 # Resize to 256x256 as specified by DEX
                 transforms.Resize((256, 256)),
-                # Center crop to 224x224
-                transforms.CenterCrop(224),
+                # Random crop to 224x224
+                transforms.RandomCrop(224),
+                # Randomly mirror the image
+                transforms.RandomHorizontalFlip(),
                 # Convert to the PIL.Image object to tensor (required)
                 transforms.ToTensor(),
                 # Normalize to ImageNet mean
-                transforms.Normalize(mean=imagenet_mean, std=imagenet_std),
+                transforms.Normalize(mean=imagenet_mean, std=[1.0, 1.0, 1.0]),
             ]
         )
 
