@@ -36,7 +36,7 @@ class FinetuneDEX(L.LightningModule):
                 # Final classifier layer (6)
                 # Higher LR for randomly initialized weights
                 "params": list(model.classifier[6].parameters()),
-                "lr": 0.001,
+                "lr": 0.0005,
             },
         ]
 
@@ -74,6 +74,7 @@ class FinetuneDEX(L.LightningModule):
             self.layer_params,
             # Use same weight decay and momentum as in DEX, since same dataset
             weight_decay=0.0005,
+            momentum=0.7,
         )
 
         # Multiply learning rate by 0.1 every 10 epochs
