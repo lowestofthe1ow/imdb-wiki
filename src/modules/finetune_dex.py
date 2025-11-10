@@ -25,18 +25,21 @@ class FinetuneDEX(L.LightningModule):
 
         self.layer_params = [
             {
-                # Classifier layers (0-5)
-                # Low LR for pre-trained weights
                 "params": [
                     p for i in range(6) for p in model.classifier[i].parameters()
                 ],
                 "lr": 0.0001,
+                "weight_decay": 0.0005,
             },
             {
-                # Final classifier layer (6)
-                # Higher LR for randomly initialized weights
-                "params": list(model.classifier[6].parameters()),
-                "lr": 0.0005,
+                "params": [model.classifier[6].weight],
+                "lr": 0.001,
+                "weight_decay": 0.0005,
+            },
+            {
+                "params": [model.classifier[6].bias],
+                "lr": 0.002,
+                "weight_decay": 0.0,
             },
         ]
 
@@ -44,7 +47,14 @@ class FinetuneDEX(L.LightningModule):
         weights_tensor = torch.from_numpy(class_weights).float().to("cuda")
 
         # Cross-entropy loss for classification
-        self.criterion = torch.nn.CrossEntropyLoss(weight=weights_tensor)
+        self.criterion = torch.nn.CrossEntropyLoss(
+            # Disabled weights for now
+            # weight=weights_tensor
+        )
+
+        # Replicate Caffe behavior
+        torch.nn.init.normal_(model.classifier[6].weight, mean=0.0, std=0.01)
+        torch.nn.init.constant_(model.classifier[6].bias, 0.0)
 
     def forward(self, x):
         """Performs a forward pass through the model"""
@@ -72,9 +82,7 @@ class FinetuneDEX(L.LightningModule):
         # ...but let's try AdamW
         optimizer = torch.optim.SGD(
             self.layer_params,
-            # Use same weight decay and momentum as in DEX, since same dataset
-            weight_decay=0.0005,
-            momentum=0.7,
+            momentum=0.9,
         )
 
         # Multiply learning rate by 0.1 every 10 epochs
