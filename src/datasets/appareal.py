@@ -13,7 +13,7 @@ imagenet_std = [0.229, 0.224, 0.225]
 class APPAREALDataset(Dataset):
     """Torch Dataset for APPA REAL"""
 
-    def __init__(self, csv_path: str):
+    def __init__(self, csv_path: str, train=True):
         """
         Args:
             csv_path:   Path to the CSV file containing the APPA-REAL image metadata
@@ -24,16 +24,34 @@ class APPAREALDataset(Dataset):
         self.set_type = csv_path.split("_")[-1].split('.')[0] # test, train, valid
         self.labels = pd.read_csv(csv_path)
         self.labels["apparent_age_avg"] = self.labels["apparent_age_avg"].round().astype("int")
-        self.transform = transforms.Compose(
-            [
-                # Resize to 256x256 to align with previous DEX
-                transforms.Resize((256, 256)),
-                # Convert to the PIL.Image object to tensor (required)
-                transforms.ToTensor(),
-                # Normalize to ImageNet mean (to align with previous DEX)
-                transforms.Normalize(mean=imagenet_mean, std=imagenet_std),
-            ]
-        )
+        if train:
+            self.transform = transforms.Compose(
+                [
+                    # Resize to 256x256 as specified by DEX
+                    transforms.Resize((256, 256)),
+                    # Random crop to 224x224
+                    transforms.RandomCrop(224),
+                    # Randomly mirror the image
+                    transforms.RandomHorizontalFlip(),
+                    # Convert to the PIL.Image object to tensor (required)
+                    transforms.ToTensor(),
+                    # Normalize to ImageNet mean
+                    transforms.Normalize(mean=imagenet_mean, std=[1.0, 1.0, 1.0]),
+                ]
+            )
+        else:
+            self.transform = transforms.Compose(
+                [
+                    # Resize to 256x256 as specified by DEX
+                    transforms.Resize((256, 256)),
+                    # Random crop to 224x224
+                    transforms.CenterCrop(224),
+                    # Convert to the PIL.Image object to tensor (required)
+                    transforms.ToTensor(),
+                    # Normalize to ImageNet mean
+                    transforms.Normalize(mean=imagenet_mean, std=[1.0, 1.0, 1.0]),
+                ]
+            )
     
     def __len__(self):
         """"""
