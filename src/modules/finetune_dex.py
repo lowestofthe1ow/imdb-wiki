@@ -9,7 +9,7 @@ class FinetuneDEX(L.LightningModule):
     PyTorch Lightning module for fine-tuning a model using DEX configurations.
     """
 
-    def __init__(self, model):
+    def __init__(self, model, class_weights):
         """Initializes the module.
 
         Args:
@@ -40,8 +40,11 @@ class FinetuneDEX(L.LightningModule):
             },
         ]
 
+        # Convert weights array into a tensor and move to CUDA device
+        weights_tensor = torch.from_numpy(class_weights).float().to("cuda")
+
         # Cross-entropy loss for classification
-        self.criterion = torch.nn.CrossEntropyLoss()
+        self.criterion = torch.nn.CrossEntropyLoss(weight=weights_tensor)
 
     def forward(self, x):
         """Performs a forward pass through the model"""
@@ -67,7 +70,7 @@ class FinetuneDEX(L.LightningModule):
     def configure_optimizers(self):
         # DEX uses stochastic gradient descent for optimization
         # ...but let's try AdamW
-        optimizer = torch.optim.AdamW(
+        optimizer = torch.optim.SGD(
             self.layer_params,
             # Use same weight decay and momentum as in DEX, since same dataset
             weight_decay=0.0005,

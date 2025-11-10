@@ -12,6 +12,7 @@ import torch
 import lightning as L
 import argparse
 import os
+import numpy as np
 
 from itertools import chain
 from torchvision import models
@@ -21,6 +22,7 @@ from src.modules.finetune_dex import FinetuneDEX
 from src.modules.finetune_mvl import FinetuneMVL
 from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 from lightning.pytorch.callbacks import ModelCheckpoint
+from sklearn.utils.class_weight import compute_class_weight
 
 # Possible tradeoff between FP precision and performance
 # torch.set_float32_matmul_precision("medium")
@@ -63,6 +65,17 @@ val_loader = DataLoader(
 print("Data loaded from /data/imdbwiki.csv.")
 
 
+# Balance class weights
+age_classes = np.arange(101)
+age_labels = train_dataset.dataset.image_data.iloc[train_dataset.indices]["age"].values
+
+# 2. Calculate the balanced class weights
+# 'balanced' uses the formula mentioned above.
+weights = compute_class_weight(
+    class_weight="balanced", classes=age_classes, y=age_labels
+)
+
+
 # Initialize model for fine-tuning
 vgg16 = models.vgg16(weights=models.VGG16_Weights.DEFAULT)
 
@@ -83,9 +96,9 @@ for param in vgg16.features[10:].parameters():
 # Initialize PyTorch Lightning module
 match args.method:
     case "DEX":
-        model = FinetuneDEX(model=vgg16)
+        model = FinetuneDEX(model=vgg16, class_weights=weights)
     case "MVL":
-        model = FinetuneMVL(model=vgg16)
+        model = FinetuneMVL(model=vgg16, class_weights=weights)
 
 
 # Set up saving model checkpoints
