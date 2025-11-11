@@ -9,7 +9,7 @@ class FinetuneDEX(L.LightningModule):
     PyTorch Lightning module for fine-tuning a model using DEX configurations.
     """
 
-    def __init__(self, model):
+    def __init__(self, model, class_weights):
         """Initializes the module.
 
         Args:
@@ -46,8 +46,12 @@ class FinetuneDEX(L.LightningModule):
             },
         ]
 
+        weights_tensor = torch.from_numpy(class_weights).float().to("cuda")
+
+        print(f"Using weighted CE loss with weights {class_weights}!")
+
         # Cross-entropy loss for classification
-        self.criterion = torch.nn.CrossEntropyLoss()
+        self.criterion = torch.nn.CrossEntropyLoss(weight=weights_tensor)
 
         # Replicate Caffe behavior
         torch.nn.init.normal_(model.classifier[6].weight, mean=0.0, std=0.01)

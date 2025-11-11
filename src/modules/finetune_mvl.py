@@ -6,7 +6,7 @@ from torch.optim.lr_scheduler import StepLR
 
 
 class FinetuneMVL(L.LightningModule):
-    def __init__(self, model):
+    def __init__(self, model, class_weights):
         """Initializes the module.
 
         Args:
@@ -17,9 +17,12 @@ class FinetuneMVL(L.LightningModule):
 
         self.model = model
 
+        # Convert weights array into a tensor and move to CUDA device
+        weights_tensor = torch.from_numpy(class_weights).float().to("cuda")
+
         # Cross-entropy loss for classification
         # Paper used λ_1 = 0.2 and λ_1 = 0.05
-        self.criterion = MeanVarianceLoss(0.2, 0.05)
+        self.criterion = MeanVarianceLoss(0.2, 0.05, weights_tensor)
 
     def forward(self, x):
         # Do a forward pass through the model

@@ -66,6 +66,13 @@ val_loader = DataLoader(
     num_workers=args.workers,
 )
 
+# Balance class weights
+age_classes = np.arange(101)
+age_labels = train_dataset.dataset.image_data.iloc[train_dataset.indices]["age"].values
+weights = compute_class_weight(
+    class_weight="balanced", classes=age_classes, y=age_labels
+)
+
 # Initialize model for fine-tuning
 vgg16 = models.vgg16(weights=models.VGG16_Weights.DEFAULT)
 
@@ -80,9 +87,9 @@ print("Data loaded from /data/imdbwiki.csv.")
 # Initialize PyTorch Lightning module
 match args.method:
     case "DEX":
-        model = FinetuneDEX(model=vgg16)
+        model = FinetuneDEX(model=vgg16, class_weights=weights)
     case "MVL":
-        model = FinetuneMVL(model=vgg16)
+        model = FinetuneMVL(model=vgg16, class_weights=weights)
 
 
 # Set up saving model checkpoints
@@ -107,12 +114,12 @@ trainer = L.Trainer(
 
 if args.checkpoint_path:
     print(".ckpt file provided. Preparing for further training...")
-    trainer.fit(
-        model=model,
-        train_dataloaders=train_loader,
-        val_dataloaders=val_loader,
-        ckpt_path=args.checkpoint_path,
-    )
+    checkpoint = torch.load(args.checkpoint_path, map_location=model.device)[
+        "state_dict"
+    ]
+    model.load_state_dict(checkpoint, strict=False)
+
+    trainer.fit(model=model, train_dataloaders=train_loader, val_dataloaders=val_loader)
 else:
     print("No .ckpt file provided. Training from default weights...")
     trainer.fit(model=model, train_dataloaders=train_loader, val_dataloaders=val_loader)
