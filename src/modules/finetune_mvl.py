@@ -17,12 +17,43 @@ class FinetuneMVL(L.LightningModule):
 
         self.model = model
 
+        # Made to replicate the original paper's configurations:
+        # https://data.vision.ee.ethz.ch/cvl/rrothe/imdb-wiki/static/age_train.prototxt
+        self.layer_params = [
+            {  # All feature extraction layers have 1e-4 learning rate
+                "params": [p for p in model.features.parameters()],
+                "lr": 0.0001,
+                "weight_decay": 0.0005,
+            },
+            {  # All classification layers except the last have 1e-4 learning rate
+                "params": [
+                    p for i in range(6) for p in model.classifier[i].parameters()
+                ],
+                "lr": 0.0001,
+                "weight_decay": 0.0005,
+            },
+            {  # Weights for last layer has 1e-3 learning rate
+                "params": [model.classifier[6].weight],
+                "lr": 0.001,
+                "weight_decay": 0.0005,
+            },
+            {  # Weights for last layer has 2e-3 learning rate and weight decay set to 0
+                "params": [model.classifier[6].bias],
+                "lr": 0.002,
+                "weight_decay": 0.0,
+            },
+        ]
+
         # Convert weights array into a tensor and move to CUDA device
         weights_tensor = torch.from_numpy(class_weights).float().to("cuda")
 
         # Cross-entropy loss for classification
         # Paper used λ_1 = 0.2 and λ_1 = 0.05
         self.criterion = MeanVarianceLoss(0.2, 0.05, weights_tensor)
+
+        # Replicate Caffe behavior
+        torch.nn.init.normal_(model.classifier[6].weight, mean=0.0, std=0.01)
+        torch.nn.init.constant_(model.classifier[6].bias, 0.0)
 
     def forward(self, x):
         # Do a forward pass through the model
@@ -45,18 +76,16 @@ class FinetuneMVL(L.LightningModule):
         return loss
 
     def configure_optimizers(self):
-        # MVL, like DEX, uses stochastic gradient descent for optimization
+        # DEX uses stochastic gradient descent for optimization
         optimizer = torch.optim.SGD(
-            self.parameters(),
-            lr=0.0001,
-            weight_decay=0.0005,
+            self.layer_params,
             momentum=0.9,
         )
 
-        # Multiply learning rate by 0.1 every 15 epochs (based on MVL paper)
+        # Multiply learning rate by 0.1 every 10 epochs
         scheduler = StepLR(
             optimizer,
-            step_size=15,
+            step_size=10,
             gamma=0.1,
         )
 

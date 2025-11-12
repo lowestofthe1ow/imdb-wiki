@@ -42,7 +42,7 @@ class IMDBWIKIDataset(Dataset):
                     # Convert to the PIL.Image object to tensor (required)
                     transforms.ToTensor(),
                     # Normalize to ImageNet mean
-                    transforms.Normalize(mean=imagenet_mean, std=[1.0, 1.0, 1.0]),
+                    transforms.Normalize(mean=imagenet_mean, std=imagenet_std),
                 ]
             )
         else:
@@ -55,7 +55,7 @@ class IMDBWIKIDataset(Dataset):
                     # Convert to the PIL.Image object to tensor (required)
                     transforms.ToTensor(),
                     # Normalize to ImageNet mean
-                    transforms.Normalize(mean=imagenet_mean, std=[1.0, 1.0, 1.0]),
+                    transforms.Normalize(mean=imagenet_mean, std=imagenet_std),
                 ]
             )
 

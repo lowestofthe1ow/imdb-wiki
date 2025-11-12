@@ -4,7 +4,7 @@ import torch
 class MeanVarianceLoss(torch.nn.Module):
     """Torch NN loss function module that implements mean-variance loss"""
 
-    def __init__(self, lm1, lm2):
+    def __init__(self, lm1, lm2, weights_tensor):
         """Initializes the module
 
         Args:
@@ -15,6 +15,8 @@ class MeanVarianceLoss(torch.nn.Module):
 
         self.lm1 = lm1
         self.lm2 = lm2
+
+        self.weights_tensor = weights_tensor
 
         # Generate age range tensor and move it to CUDA device (i.e. the GPU; required
         # for training)
@@ -55,7 +57,7 @@ class MeanVarianceLoss(torch.nn.Module):
         # Softmax (cross-entropy) loss L_s
         # Initialize the loss function (CrossEntropyLoss is an object; we need to do
         # this separately)
-        _softmax_loss = torch.nn.CrossEntropyLoss(weight=weights_tensor)
+        _softmax_loss = torch.nn.CrossEntropyLoss(weight=self.weights_tensor)
         # Calculate the softmax loss
         softmax_loss = _softmax_loss(input, target)
 
