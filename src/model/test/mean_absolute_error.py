@@ -1,6 +1,7 @@
 """
 Test inference against APPA REAL testing set
 """
+
 import pandas as pd
 import torch
 from torchvision import models
@@ -38,20 +39,25 @@ transform = transforms.Compose(
     ]
 )
 
-# Used only in DEX
-layer_params = [
-    {
-        # Flatten an iterator that goes over all the classifier layers in VGG16
-        "params": [p for i in range(6) for p in vgg16.classifier[i].parameters()],
-        "lr": 0.0001,
-    },
-    {"params": list(vgg16.classifier[6].parameters()), "lr": 0.001},
-]
+if "DEX" in args.model_path:
+    mode = "DEX"
+else:
+    mode = "MVL"
 
-
-model = FinetuneMVL.load_from_checkpoint(
-    CHECKPOINT, model=vgg16, batch_size=128  # , layer_params=layer_params
-)
+if mode == "DEX":
+    layer_params = [
+        {
+            # Flatten an iterator that goes over all the classifier layers in VGG16
+            "params": [p for i in range(6) for p in vgg16.classifier[i].parameters()],
+            "lr": 0.0001,
+        },
+        {"params": list(vgg16.classifier[6].parameters()), "lr": 0.001},
+    ]
+    model = FinetuneDEX.load_from_checkpoint(
+        CHECKPOINT, model=vgg16, batch_size=128, layer_params=layer_params
+    )
+elif mode == "MVL":
+    model = FinetuneMVL.load_from_checkpoint(CHECKPOINT, model=vgg16, batch_size=128)
 
 model.eval()
 
@@ -63,7 +69,7 @@ def test(model: FinetuneDEX | FinetuneMVL, image_path: str):
             output = model(torch.unsqueeze(transform(image), 0).to("cuda")).to("cpu")
             prob = torch.nn.functional.softmax(output, dim=1)[0]
             age_range = torch.arange(1, 102)  # [1, 2, ..., 101]
-            estimated_age = (prob * age_range).sum() # weighted sum of ages
+            estimated_age = (prob * age_range).sum()  # weighted sum of ages
         except Exception as e:
             print(f"Error opening `{image_path}`:\n{e}")
     return estimated_age.item()
@@ -72,15 +78,15 @@ def test(model: FinetuneDEX | FinetuneMVL, image_path: str):
 # Ready the test set from APPA-REAL
 test_images = pd.read_csv("data/appa-real-release/gt_avg_test.csv")
 test_images["file_name"] = "data/appa-real-release/test/" + test_images["file_name"]
-test_images["estimate"] = test_images["file_name"].progress_apply(lambda x: test(model, x))
+test_images["estimate"] = test_images["file_name"].progress_apply(
+    lambda x: test(model, x)
+)
 
 # MAE
 test_images["error_apparent"] = abs(
     test_images["estimate"] - test_images["apparent_age_avg"]
 )
-test_images["error_real"] = abs(
-    test_images["estimate"] - test_images["real_age"]
-)
+test_images["error_real"] = abs(test_images["estimate"] - test_images["real_age"])
 
 print(test_images.head(5))
 

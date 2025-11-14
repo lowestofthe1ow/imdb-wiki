@@ -4,10 +4,9 @@ import lightning as L
 
 from torch.optim.lr_scheduler import StepLR
 
-
 class FinetuneDEX(L.LightningModule):
     """
-    PyTorch Lightning module for fine-tuning a model using DEX configurations.
+    PyTorch Lightning module for fine-tuning a model
     """
 
     # Default weights = even distribution across 101 classes
@@ -48,11 +47,8 @@ class FinetuneDEX(L.LightningModule):
             },
         ]
 
+        print(f"* Using Cross Entropy Loss. {class_weights = }")
         weights_tensor = torch.from_numpy(class_weights).float().to("cuda")
-
-        print(f"Using weighted CE loss with weights {class_weights}!")
-
-        # Cross-entropy loss for classification
         self.criterion = torch.nn.CrossEntropyLoss(weight=weights_tensor)
 
         # Replicate Caffe behavior
@@ -60,8 +56,6 @@ class FinetuneDEX(L.LightningModule):
         torch.nn.init.constant_(model.classifier[6].bias, 0.0)
 
     def forward(self, x):
-        """Performs a forward pass through the model"""
-
         return self.model(x)
 
     def training_step(self, batch, batch_idx):
@@ -77,7 +71,6 @@ class FinetuneDEX(L.LightningModule):
         outputs = self(inputs)
         loss = self.criterion(outputs, labels)
         self.log("val_loss", loss, on_epoch=True, prog_bar=True)
-
         return loss
 
     def configure_optimizers(self):
