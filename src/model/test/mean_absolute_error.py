@@ -10,6 +10,10 @@ from src.modules.finetune_dex import FinetuneDEX
 from torchvision.models import VGG16_Weights
 import torchvision.transforms as transforms
 import argparse
+from src.datasets.constants import TRANSFORM_TO_SIZE, IMAGENET_MEAN, IMAGENET_STD
+from tqdm import tqdm
+
+tqdm.pandas()
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model-path", type=str)
@@ -26,11 +30,11 @@ CHECKPOINT = args.model_path
 
 transform = transforms.Compose(
     [
-        transforms.Resize((256, 256)),
+        transforms.Resize(TRANSFORM_TO_SIZE),
         # TODO: Seems to perform better without the center crop?
-        # transforms.CenterCrop((224, 224)),
+        # transforms.CenterCrop(CROP_SIZE),
         transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        transforms.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
     ]
 )
 
@@ -52,28 +56,31 @@ model = FinetuneMVL.load_from_checkpoint(
 model.eval()
 
 
-def test(model, image_path):
+def test(model: FinetuneDEX | FinetuneMVL, image_path: str):
     with torch.no_grad():  # No need to calculate gradients during inference
         image = Image.open(image_path).convert("RGB")
-        output = model(torch.unsqueeze(transform(image), 0).to("cuda")).to("cpu")
-        prob = torch.nn.functional.softmax(output, dim=1)[0]
-        age_range = torch.arange(1, 102)  # [1, 2, ..., 101]
-
-        # Get weighted sum of ages to arrive at a single age estimate
-        estimated_age = (prob * age_range).sum()
+        try:
+            output = model(torch.unsqueeze(transform(image), 0).to("cuda")).to("cpu")
+            prob = torch.nn.functional.softmax(output, dim=1)[0]
+            age_range = torch.arange(1, 102)  # [1, 2, ..., 101]
+            estimated_age = (prob * age_range).sum() # weighted sum of ages
+        except Exception as e:
+            print(f"Error opening `{image_path}`:\n{e}")
     return estimated_age.item()
 
 
 # Ready the test set from APPA-REAL
 test_images = pd.read_csv("data/appa-real-release/gt_avg_test.csv")
 test_images["file_name"] = "data/appa-real-release/test/" + test_images["file_name"]
-test_images["estimate"] = test_images["file_name"].apply(lambda x: test(model, x))
+test_images["estimate"] = test_images["file_name"].progress_apply(lambda x: test(model, x))
 
 # MAE
 test_images["error_apparent"] = abs(
     test_images["estimate"] - test_images["apparent_age_avg"]
 )
-test_images["error_real"] = abs(test_images["estimate"] - test_images["real_age"])
+test_images["error_real"] = abs(
+    test_images["estimate"] - test_images["real_age"]
+)
 
 print(test_images.head(5))
 

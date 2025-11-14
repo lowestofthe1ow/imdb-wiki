@@ -7,10 +7,7 @@ from torch.utils.data import Dataset
 from PIL import Image
 import os
 
-# Known values for the ImageNet dataset mean and std
-imagenet_mean = [0.485, 0.456, 0.406]
-imagenet_std = [0.229, 0.224, 0.225]
-
+from src.datasets.constants import IMAGENET_MEAN, TRANSFORM_TO_SIZE, CROP_SIZE
 
 class FairFaceDataset(Dataset):
     """Torch Dataset for FairFace"""
@@ -28,8 +25,6 @@ class FairFaceDataset(Dataset):
         fairface_val_df = pd.read_csv(Path(fairface_path) / "fairface_label_val.csv")
         fairface_df = pd.concat([fairface_train_df, fairface_val_df])
 
-        # Do some cleaning on fairface_df
-        
         def mean_from_age_range_string(age_range_str: str):
             """String '1-10' will return 5.5"""
             if "-" in age_range_str:
@@ -58,29 +53,20 @@ class FairFaceDataset(Dataset):
         if train:
             self.transform = transforms.Compose(
                 [
-                    # Resize to 256x256 as specified by DEX
-                    transforms.Resize((256, 256)),
-                    # Random crop to 224x224
-                    transforms.RandomCrop(224),
-                    # Randomly mirror the image
+                    transforms.Resize(TRANSFORM_TO_SIZE),
+                    transforms.RandomCrop(CROP_SIZE),
                     transforms.RandomHorizontalFlip(),
-                    # Convert to the PIL.Image object to tensor (required)
                     transforms.ToTensor(),
-                    # Normalize to ImageNet mean
-                    transforms.Normalize(mean=imagenet_mean, std=[1.0, 1.0, 1.0]),
+                    transforms.Normalize(mean=IMAGENET_MEAN, std=[1.0, 1.0, 1.0]),
                 ]
             )
         else:
             self.transform = transforms.Compose(
                 [
-                    # Resize to 256x256 as specified by DEX
-                    transforms.Resize((256, 256)),
-                    # Random crop to 224x224
-                    transforms.CenterCrop(224),
-                    # Convert to the PIL.Image object to tensor (required)
+                    transforms.Resize(TRANSFORM_TO_SIZE),
+                    transforms.CenterCrop(CROP_SIZE),
                     transforms.ToTensor(),
-                    # Normalize to ImageNet mean
-                    transforms.Normalize(mean=imagenet_mean, std=[1.0, 1.0, 1.0]),
+                    transforms.Normalize(mean=IMAGENET_MEAN, std=[1.0, 1.0, 1.0]),
                 ]
             )
 

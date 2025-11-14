@@ -6,10 +6,7 @@ import torchvision.transforms as transforms
 from torch.utils.data import Dataset
 from PIL import Image
 
-# Known values for the ImageNet dataset mean and std
-imagenet_mean = [0.485, 0.456, 0.406]
-imagenet_std = [0.229, 0.224, 0.225]
-
+from src.datasets.constants import CROP_SIZE, IMAGENET_MEAN, TRANSFORM_TO_SIZE
 
 class APPAREALDataset(Dataset):
     """Torch Dataset for APPA REAL"""
@@ -46,29 +43,20 @@ class APPAREALDataset(Dataset):
         if train:
             self.transform = transforms.Compose(
                 [
-                    # Resize to 256x256 as specified by DEX
-                    transforms.Resize((256, 256)),
-                    # Random crop to 224x224
-                    transforms.RandomCrop(224),
-                    # Randomly mirror the image
+                    transforms.Resize(TRANSFORM_TO_SIZE),
+                    transforms.RandomCrop(CROP_SIZE),
                     transforms.RandomHorizontalFlip(),
-                    # Convert to the PIL.Image object to tensor (required)
                     transforms.ToTensor(),
-                    # Normalize to ImageNet mean
-                    transforms.Normalize(mean=imagenet_mean, std=[1.0, 1.0, 1.0]),
+                    transforms.Normalize(mean=IMAGENET_MEAN, std=[1.0, 1.0, 1.0]),
                 ]
             )
         else:
             self.transform = transforms.Compose(
                 [
-                    # Resize to 256x256 as specified by DEX
-                    transforms.Resize((256, 256)),
-                    # Random crop to 224x224
-                    transforms.CenterCrop(224),
-                    # Convert to the PIL.Image object to tensor (required)
+                    transforms.Resize(TRANSFORM_TO_SIZE),
+                    transforms.CenterCrop(CROP_SIZE),
                     transforms.ToTensor(),
-                    # Normalize to ImageNet mean
-                    transforms.Normalize(mean=imagenet_mean, std=[1.0, 1.0, 1.0]),
+                    transforms.Normalize(mean=IMAGENET_MEAN, std=[1.0, 1.0, 1.0]),
                 ]
             )
 
