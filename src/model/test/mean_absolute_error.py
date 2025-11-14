@@ -9,6 +9,11 @@ from src.modules.finetune_mvl import FinetuneMVL
 from src.modules.finetune_dex import FinetuneDEX
 from torchvision.models import VGG16_Weights
 import torchvision.transforms as transforms
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--model-path", type=str)
+args = parser.parse_args()
 
 vgg16 = models.vgg16(weights=VGG16_Weights.DEFAULT)
 
@@ -17,7 +22,7 @@ vgg16 = models.vgg16(weights=VGG16_Weights.DEFAULT)
 vgg16.classifier[6] = torch.nn.Linear(4096, 101)
 
 # .ckpt file
-CHECKPOINT = "IMDBWIKI_MVL_epoch=05_val_loss=26.53.ckpt"
+CHECKPOINT = args.model_path
 
 transform = transforms.Compose(
     [
