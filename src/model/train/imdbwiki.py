@@ -25,7 +25,7 @@ from lightning.pytorch.callbacks import ModelCheckpoint
 from sklearn.utils.class_weight import compute_class_weight
 
 # Possible tradeoff between FP precision and performance
-# torch.set_float32_matmul_precision("medium")
+torch.set_float32_matmul_precision("medium")
 
 # Command-line arguments
 parser = argparse.ArgumentParser()
@@ -67,7 +67,7 @@ val_loader = DataLoader(
 )
 
 # Balance class weights
-age_classes = np.arange(1, 101, 1)
+age_classes = np.arange(0, 101, 1)
 age_labels = train_dataset.dataset.image_data.iloc[train_dataset.indices]["age"].values
 print(f"{age_classes = }")
 print(f"{np.unique(age_labels) = }")
@@ -78,10 +78,10 @@ weights = compute_class_weight(
 # Initialize model for fine-tuning
 vgg16 = models.vgg16(weights=models.VGG16_Weights.DEFAULT)
 
-# Change output layer to have 100 neurons, one for each age class
+# Change output layer to have 101 neurons, one for each age class
 vgg16.classifier[6] = torch.nn.Linear(
     4096,  # 4096 inputs to the final fully connected layer
-    100,  # 100 age classes
+    len(age_classes)
 )
 
 print("> Data loaded from /data/imdbwiki.csv.")
@@ -119,12 +119,10 @@ if args.checkpoint_path:
         "state_dict"
     ]
     model.load_state_dict(checkpoint, strict=False)
-
-    trainer.fit(model=model, train_dataloaders=train_loader, val_dataloaders=val_loader)
 else:
     print("* No .ckpt file provided. Training from default weights...")
-    trainer.fit(model=model, train_dataloaders=train_loader, val_dataloaders=val_loader)
 
+trainer.fit(model=model, train_dataloaders=train_loader, val_dataloaders=val_loader)
 
 # Save the final model state dict (.pth file) to be safe.
 torch.save(model.state_dict(), "checkpoints/imdbwiki_dex.pth")

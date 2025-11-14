@@ -73,13 +73,13 @@ def extract_metadata(root, path, var_name):
     df = df[df["dob"].dt.month <= 12]
     df = df[df["dob"].dt.month >= 1]
 
-    # Get age and limit to [1, 100]
+    # Get age and limit to [0, 100]
     tqdm.pandas(desc="* Inferring ages")
     df["age"] = df.progress_apply(
         lambda x: relativedelta(x["photo_taken"], x["dob"]).years, axis=1,
     )
-    print("* Removing ages out of range [1-100]")
-    df = df[df["age"] > 0]
+    print("* Removing ages out of range [0-100]")
+    df = df[df["age"] >= 0]
     df = df[df["age"] < 101]
 
     return df

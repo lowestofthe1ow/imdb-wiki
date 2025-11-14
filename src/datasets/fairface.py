@@ -57,7 +57,7 @@ class FairFaceDataset(Dataset):
                     transforms.RandomCrop(CROP_SIZE),
                     transforms.RandomHorizontalFlip(),
                     transforms.ToTensor(),
-                    transforms.Normalize(mean=IMAGENET_MEAN, std=[1.0, 1.0, 1.0]),
+                    transforms.Normalize(mean=IMAGENET_MEAN, std=torch.ones(3)),
                 ]
             )
         else:
@@ -66,7 +66,7 @@ class FairFaceDataset(Dataset):
                     transforms.Resize(TRANSFORM_TO_SIZE),
                     transforms.CenterCrop(CROP_SIZE),
                     transforms.ToTensor(),
-                    transforms.Normalize(mean=IMAGENET_MEAN, std=[1.0, 1.0, 1.0]),
+                    transforms.Normalize(mean=IMAGENET_MEAN, std=torch.ones(3)),
                 ]
             )
 
