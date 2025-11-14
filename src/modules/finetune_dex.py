@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 import lightning as L
 
@@ -9,7 +10,8 @@ class FinetuneDEX(L.LightningModule):
     PyTorch Lightning module for fine-tuning a model using DEX configurations.
     """
 
-    def __init__(self, model, class_weights):
+    # Default weights = even distribution across 101 classes
+    def __init__(self, model, class_weights=np.full(101, 1 / 101)):
         """Initializes the module.
 
         Args:

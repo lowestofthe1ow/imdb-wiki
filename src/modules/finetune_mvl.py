@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 import lightning as L
 
@@ -6,7 +7,7 @@ from torch.optim.lr_scheduler import StepLR
 
 
 class FinetuneMVL(L.LightningModule):
-    def __init__(self, model, class_weights):
+    def __init__(self, model, class_weights=np.full(101, 1 / 101)):
         """Initializes the module.
 
         Args:
