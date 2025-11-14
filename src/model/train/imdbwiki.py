@@ -67,8 +67,10 @@ val_loader = DataLoader(
 )
 
 # Balance class weights
-age_classes = np.arange(101)
+age_classes = np.arange(1, 101, 1)
 age_labels = train_dataset.dataset.image_data.iloc[train_dataset.indices]["age"].values
+print(f"{age_classes = }")
+print(f"{np.unique(age_labels) = }")
 weights = compute_class_weight(
     class_weight="balanced", classes=age_classes, y=age_labels
 )
@@ -76,13 +78,13 @@ weights = compute_class_weight(
 # Initialize model for fine-tuning
 vgg16 = models.vgg16(weights=models.VGG16_Weights.DEFAULT)
 
-# Change output layer to have 101 neurons, one for each age class
+# Change output layer to have 100 neurons, one for each age class
 vgg16.classifier[6] = torch.nn.Linear(
     4096,  # 4096 inputs to the final fully connected layer
-    101,  # 101 age classes
+    100,  # 100 age classes
 )
 
-print("Data loaded from /data/imdbwiki.csv.")
+print("> Data loaded from /data/imdbwiki.csv.")
 
 # Initialize PyTorch Lightning module
 match args.method:
@@ -102,8 +104,7 @@ checkpoint_config = ModelCheckpoint(
     mode="min",
 )
 
-
-print("Starting training...")
+print("## Starting training...")
 
 # Initialize PyTorch Lightning Trainer and begin training
 trainer = L.Trainer(
@@ -113,7 +114,7 @@ trainer = L.Trainer(
 )
 
 if args.checkpoint_path:
-    print(".ckpt file provided. Preparing for further training...")
+    print("* .ckpt file provided. Preparing for further training...")
     checkpoint = torch.load(args.checkpoint_path, map_location=model.device)[
         "state_dict"
     ]
@@ -121,7 +122,7 @@ if args.checkpoint_path:
 
     trainer.fit(model=model, train_dataloaders=train_loader, val_dataloaders=val_loader)
 else:
-    print("No .ckpt file provided. Training from default weights...")
+    print("* No .ckpt file provided. Training from default weights...")
     trainer.fit(model=model, train_dataloaders=train_loader, val_dataloaders=val_loader)
 
 

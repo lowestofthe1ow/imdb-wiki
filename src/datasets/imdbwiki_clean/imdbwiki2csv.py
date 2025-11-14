@@ -15,6 +15,9 @@ from scipy.io import loadmat
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from imblearn.under_sampling import RandomUnderSampler
+from tqdm import tqdm
+
+tqdm.pandas()
 
 # Command-line arguments
 parser = argparse.ArgumentParser()
@@ -45,8 +48,8 @@ def extract_metadata(root, path, var_name):
         columns=["dob", "photo_taken", "full_path"],
     )
 
-    # Set file paths
-    df["full_path"] = df["full_path"].apply(
+    tqdm.pandas(desc="* Setting file paths")
+    df["full_path"] = df["full_path"].progress_apply(
         lambda x: os.path.join(root, f"{var_name}_crop", x)
     )
 
@@ -64,15 +67,18 @@ def extract_metadata(root, path, var_name):
     df.dropna()
 
     # Some images on the WIKI dataset are broken for whatever reason
+    print("* Removing invalid images")
     df = df[df["photo_taken"].dt.month <= 12]
     df = df[df["photo_taken"].dt.month >= 1]
     df = df[df["dob"].dt.month <= 12]
     df = df[df["dob"].dt.month >= 1]
 
     # Get age and limit to [1, 100]
-    df["age"] = df.apply(
-        lambda x: relativedelta(x["photo_taken"], x["dob"]).years, axis=1
+    tqdm.pandas(desc="* Inferring ages")
+    df["age"] = df.progress_apply(
+        lambda x: relativedelta(x["photo_taken"], x["dob"]).years, axis=1,
     )
+    print("* Removing ages out of range [1-100]")
     df = df[df["age"] > 0]
     df = df[df["age"] < 101]
 
@@ -80,21 +86,24 @@ def extract_metadata(root, path, var_name):
 
 
 # Extract metadata from both IMDB and WIKI datasets then concatenate
+print("## Extracting metadata from IMDB")
 metadata_imdb = extract_metadata(
     args.imdb_path, os.path.join(args.imdb_path, "imdb_crop/imdb.mat"), "imdb"
 )
+print("## Extracting metadata from Wikipedia")
 metadata_wiki = extract_metadata(
     args.wiki_path, os.path.join(args.wiki_path, "wiki_crop/wiki.mat"), "wiki"
 )
+print("## Concatenating IMDB and Wikipedia data")
 metadata = pd.concat([metadata_imdb, metadata_wiki])
 
 
 # Downsample the dataset to balance age classes
 # DEX conference paper simply discarded from the most populous age groups
 print(
-    f"Total number of images: {len(metadata)} ({len(metadata_imdb)} IMDB; {len(metadata_wiki)} WIKI)"
+    f"> Total number of images: {len(metadata)} ({len(metadata_imdb)} IMDB; {len(metadata_wiki)} WIKI)"
 )
-print("Downsampling...")
+print("## Downsampling...")
 
 TOTAL_SAMPLES = 260282  # DEX paper used this many samples for training
 sizes = metadata.groupby("age").size()
@@ -103,7 +112,7 @@ sizes = metadata.groupby("age").size()
 while sizes.sum() > TOTAL_SAMPLES:
     sizes[sizes.idxmax()] -= 1
 
-print(f"Downsampled size: {sizes.sum()}")
+print(f"> Downsampled size: {sizes.sum()}")
 
 # Run a RandomUnderSampler to randomly delete samples based on target sizes
 X = metadata.drop("age", axis=1)
