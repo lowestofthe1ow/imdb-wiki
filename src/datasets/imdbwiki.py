@@ -19,9 +19,9 @@ class IMDBWIKIDataset(Dataset):
             path_prefix:    Path to prefix to the image paths in the CSV file
         """
         self.image_data = pd.read_csv(csv_path)
-        # self.image_data["full_path"] = self.image_data["full_path"].apply(
-        #     lambda x: os.path.join(path_prefix, x)
-        # )
+        self.image_data["full_path"] = self.image_data["full_path"].apply(
+            lambda x: os.path.join(path_prefix, x)
+        )
 
         if train:
             self.transform = transforms.Compose(

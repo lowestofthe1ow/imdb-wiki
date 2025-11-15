@@ -25,11 +25,11 @@ class FairFaceDataset(Dataset):
         fairface_val_df = pd.read_csv(Path(fairface_path) / "fairface_label_val.csv")
         fairface_df = pd.concat([fairface_train_df, fairface_val_df])
 
-        def mean_from_age_range_string(age_range_str: str):
-            """String '1-10' will return 5.5"""
+        def rounded_mean_from_age_range_string(age_range_str: str):
+            """String '1-10' will return 6"""
             if "-" in age_range_str:
                 first, second = age_range_str.split("-")
-                return (int(first) + int(second)) / 2
+                return round((int(first) + int(second)) / 2)
             elif age_range_str == "more than 70":  # special case
                 return 70
             else:
@@ -43,7 +43,7 @@ class FairFaceDataset(Dataset):
                     )
                 ),
                 "age": fairface_df["age"].apply(
-                    lambda age_range_str: mean_from_age_range_string(age_range_str)
+                    lambda age_range_str: rounded_mean_from_age_range_string(age_range_str)
                 ),
                 "race": fairface_df["race"],
                 "gender": fairface_df["gender"],

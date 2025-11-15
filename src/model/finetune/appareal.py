@@ -26,7 +26,7 @@ from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 from lightning.pytorch.callbacks import ModelCheckpoint
 
 # Possible tradeoff between FP precision and performance
-# torch.set_float32_matmul_precision("medium")
+torch.set_float32_matmul_precision("medium")
 
 # Command-line arguments
 parser = argparse.ArgumentParser()
