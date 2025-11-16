@@ -5,9 +5,9 @@ uv run \
     --min-epochs 0 \
     --max-epochs 100 \
     --method "DEX" \
-    --dataset "APPAREAL" \
-    --dataset-path "data/appa-real-release/" \
-    --outfile-prefix "IMDBWIKI_APPAREAL" \
+    --dataset "IMDBWIKI" \
+    --dataset-path "data/chalearn_2015/" \
+    --outfile-prefix "IMDBWIKI_CHALEARN" \
     --checkpoint-path "checkpoints/IMDBWIKI_DEX_epoch=28_val_loss=3.36.ckpt" \
     # --use-weighted-ce
     # --batch-size 64 \
