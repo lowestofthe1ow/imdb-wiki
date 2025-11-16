@@ -11,7 +11,7 @@ class FinetuneDEX(L.LightningModule):
     """
 
     # Default weights = even distribution across 101 classes
-    def __init__(self, model, class_weights=np.full(101, 1 / 101)):
+    def __init__(self, model, criterion):
         """Initializes the module.
 
         Args:
@@ -48,14 +48,10 @@ class FinetuneDEX(L.LightningModule):
             },
         ]
 
-        weights_tensor = torch.from_numpy(class_weights).float().to("cuda")
-
-        print(f"Using weighted CE loss with weights {class_weights}!")
-
         # Cross-entropy loss for classification
-        self.criterion = torch.nn.CrossEntropyLoss(weight=weights_tensor)
+        self.criterion = criterion
 
-        # Replicate Caffe behavior
+        # Replicate Caffe behavior with weights and biases on the last layer
         torch.nn.init.normal_(model.classifier[6].weight, mean=0.0, std=0.01)
         torch.nn.init.constant_(model.classifier[6].bias, 0.0)
 

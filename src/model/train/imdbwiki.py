@@ -1,28 +1,23 @@
 # train_dex_imdbwiki.py
 # Begins training the model on the IMDB-WIKI dataset based on DEX or MVL
 
-# Parameters:
-# --batch-size  Batch size
-# --workers     Number of CPU workers
-# --min-epochs  Minimum number of epochs, even if early stop is triggered
-# --max-epochs  Maximum number of epochs, even if early stop is NOT triggered
-# --method      "MVL" or "DEX"
-
-import torch
-import lightning as L
 import argparse
-import os
+import lightning as L
 import numpy as np
+import os
+import torch
 
 from itertools import chain
-from torchvision import models
-from torch.utils.data import Dataset, DataLoader, random_split
-from src.datasets.imdbwiki import IMDBWIKIDataset
-from src.modules.finetune_dex import FinetuneDEX
-from src.modules.finetune_mvl import FinetuneMVL
-from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 from lightning.pytorch.callbacks import ModelCheckpoint
+from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 from sklearn.utils.class_weight import compute_class_weight
+from torch.utils.data import Dataset, DataLoader, random_split
+from torchvision import models
+
+from src.datasets.imdbwiki import IMDBWIKIDataset
+from src.datasets.appareal import APPAREALDataset
+from src.modules.finetune_dex import FinetuneDEX
+from src.modules.mean_variance_loss import MeanVarianceLoss
 
 # Possible tradeoff between FP precision and performance
 torch.set_float32_matmul_precision("medium")
@@ -33,16 +28,23 @@ parser.add_argument("--batch-size", type=int)
 parser.add_argument("--workers", type=int)
 parser.add_argument("--min-epochs", type=int)
 parser.add_argument("--max-epochs", type=int)
-parser.add_argument("--learning-rate", type=float)
 parser.add_argument("--method", type=str)
 parser.add_argument("--checkpoint-path", type=str)
-parser.add_argument("--csv-path", type=str)
-parser.add_argument("--data-path", type=str)
+parser.add_argument("--dataset", default="IMDBWIKI", type=str)
+parser.add_argument("--dataset-path", type=str)
+parser.add_argument("--outfile-prefix", default="model", type=str)
+parser.add_argument("--use-weighted-ce", action=argparse.BooleanOptionalAction)
 args = parser.parse_args()
 
+# Load the dataset
+DatasetClass = None
+match args.dataset:
+    case "IMDBWIKI":
+        DatasetClass = IMDBWIKIDataset
+    case "APPAREAL":
+        DatasetClass = APPAREALDataset
 
-# Load the IMDB-WIKI dataset
-dataset = IMDBWIKIDataset(args.csv_path, args.data_path)
+dataset = DatasetClass(args.dataset_path)
 
 # Do a 90/10 split for training and validation
 train_size = int(0.9 * len(dataset))
@@ -50,8 +52,8 @@ val_size = len(dataset) - train_size
 train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
 
 # Set the validation subset to use a different configuration
-# Uses center crop instead of random crop and without random mirroring
-val_dataset.dataset = IMDBWIKIDataset(args.csv_path, args.data_path, train=False)
+# This configuration uses different transforms for the image inputs
+val_dataset.dataset = DatasetClass(args.dataset_path, train=False)
 
 # Create two separate data loaders: one for training and another for validation
 train_loader = DataLoader(
@@ -66,43 +68,55 @@ val_loader = DataLoader(
     num_workers=args.workers,
 )
 
-# Balance class weights
-age_classes = np.arange(0, 101, 1)
-age_labels = train_dataset.dataset.image_data.iloc[train_dataset.indices]["age"].values
-print(f"{age_classes = }")
-print(f"{np.unique(age_labels) = }")
-weights = compute_class_weight(
-    class_weight="balanced", classes=age_classes, y=age_labels
-)
+print("> Data loaded from /data/imdbwiki.csv.")
 
-# Initialize model for fine-tuning
+
+# Calculate the weights for each age class if using weighted cross-entropy loss
+age_classes = np.arange(0, 101, 1)
+
+if args.use_weighted_ce:
+    age_labels = train_dataset.dataset.labels.iloc[train_dataset.indices]["age"].values
+    print(age_labels)
+    weights = compute_class_weight(
+        class_weight="balanced", classes=age_classes, y=age_labels
+    )
+    print(f"Using weighted CE loss with weights {weights}")
+else:
+    weights = np.full(101, 1 / 101)  # Uniform weights
+    print("Using unweighted CE loss")
+
+weights_tensor = torch.from_numpy(weights).float().to("cuda")
+
+
 vgg16 = models.vgg16(weights=models.VGG16_Weights.DEFAULT)
 
 # Change output layer to have 101 neurons, one for each age class
 vgg16.classifier[6] = torch.nn.Linear(
-    4096,  # 4096 inputs to the final fully connected layer
-    len(age_classes)
+    4096, len(age_classes)  # 4096 inputs to the final fully connected layer
 )
 
-print("> Data loaded from /data/imdbwiki.csv.")
-
-# Initialize PyTorch Lightning module
+# Initialize PyTorch Lightning module, using CE loss or MVL
 match args.method:
     case "DEX":
-        model = FinetuneDEX(model=vgg16, class_weights=weights)
+        model = FinetuneDEX(
+            model=vgg16, criterion=torch.nn.CrossEntropyLoss(weight=weights_tensor)
+        )
     case "MVL":
-        model = FinetuneMVL(model=vgg16, class_weights=weights)
+        model = FinetuneDEX(
+            model=vgg16, criterion=MeanVarianceLoss(0.2, 0.05, weights_tensor)
+        )
 
 
 # Set up saving model checkpoints
 os.makedirs("checkpoints", exist_ok=True)
 checkpoint_config = ModelCheckpoint(
     dirpath="checkpoints",
-    filename=f"IMDBWIKI_{args.method}_{{epoch:02d}}_{{val_loss:.2f}}",
+    filename=f"{args.outfile_prefix}_{{epoch:02d}}_{{val_loss:.2f}}",
     save_top_k=1,
     monitor="val_loss",
     mode="min",
 )
+
 
 print("## Starting training...")
 

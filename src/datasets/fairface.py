@@ -1,13 +1,15 @@
-from pathlib import Path
+import numpy as np
+import os
 import pandas as pd
 import torch
 import torchvision.transforms as transforms
-import numpy as np
-from torch.utils.data import Dataset
-from PIL import Image
-import os
 
-from src.datasets.constants import IMAGENET_MEAN, TRANSFORM_TO_SIZE, CROP_SIZE
+from PIL import Image
+from pathlib import Path
+from torch.utils.data import Dataset
+
+from src.datasets.constants import TRAIN_TRANSFORMS, VAL_TEST_TRANSFORMS
+
 
 class FairFaceDataset(Dataset):
     """Torch Dataset for FairFace"""
@@ -51,33 +53,22 @@ class FairFaceDataset(Dataset):
         )
 
         if train:
-            self.transform = transforms.Compose(
-                [
-                    transforms.Resize(TRANSFORM_TO_SIZE),
-                    transforms.RandomCrop(CROP_SIZE),
-                    transforms.RandomHorizontalFlip(),
-                    transforms.ToTensor(),
-                    transforms.Normalize(mean=IMAGENET_MEAN, std=torch.ones(3)),
-                ]
-            )
+            self.transform = TRAIN_TRANSFORMS
         else:
-            self.transform = transforms.Compose(
-                [
-                    transforms.Resize(TRANSFORM_TO_SIZE),
-                    transforms.CenterCrop(CROP_SIZE),
-                    transforms.ToTensor(),
-                    transforms.Normalize(mean=IMAGENET_MEAN, std=torch.ones(3)),
-                ]
-            )
+            self.transform = VAL_TEST_TRANSFORMS
 
     def __len__(self):
         return len(self.labels)
 
     def __getitem__(self, index) -> tuple[Image.Image, int]:
-        image_path = self.labels.iloc[index]["full_path"]
-        image = Image.open(image_path).convert("RGB")
-        image = self.transform(image)
-        label = self.labels.iloc[index]["age"]
+        try:
+            image_path = self.labels.iloc[index]["full_path"]
+            image = Image.open(image_path).convert("RGB")
+            image = self.transform(image)
+            label = self.labels.iloc[index]["age"]
+        except Exception as e:
+            print(f"Error opening `{file_name}`:\n{e}")
+
         return image, label
 
 
