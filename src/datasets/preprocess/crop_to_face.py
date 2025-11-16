@@ -35,15 +35,14 @@ def crop_to_face(input_path, margin_percentage, output_path):
     face_width = x_max - x_min
     face_height = y_max - y_min
 
-    # Calculate 40% margins
-    pixel_padding_x = face_width * margin_percentage
-    pixel_padding_y = face_height * margin_percentage
+    # Calculate 40% margin based on bigger dimension, so padding is uniform
+    pixel_padding = max(face_width, face_height) * margin_percentage
 
     # Get cropped boundaries with added margin
-    cropped_x_min = max(0, int(x_min - pixel_padding_x))
-    cropped_y_min = max(0, int(y_min - pixel_padding_y))
-    cropped_x_max = min(img_w, int(x_max + pixel_padding_x))
-    cropped_y_max = min(img_h, int(y_max + pixel_padding_y))
+    cropped_x_min = max(0, int(x_min - pixel_padding))
+    cropped_y_min = max(0, int(y_min - pixel_padding))
+    cropped_x_max = min(img_w, int(x_max + pixel_padding))
+    cropped_y_max = min(img_h, int(y_max + pixel_padding))
 
     cropped_img = img.crop((cropped_x_min, cropped_y_min, cropped_x_max, cropped_y_max))
 

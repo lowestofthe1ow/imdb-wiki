@@ -55,10 +55,19 @@ class FinetuneDEX(L.LightningModule):
         torch.nn.init.normal_(model.classifier[6].weight, mean=0.0, std=0.01)
         torch.nn.init.constant_(model.classifier[6].bias, 0.0)
 
-    def forward(self, x):
-        """Performs a forward pass through the model"""
+        self.model.classifier[4].register_forward_hook(self.get_embeddings)
 
-        return self.model(x)
+    def get_embeddings(self, module, args, output):
+        self.embeddings = output.detach()
+
+    def forward(self, x, capture_embeddings=False):
+        """Performs a forward pass through the model"""
+        output = self.model(x)
+
+        if capture_embeddings:
+            return output, self.embeddings
+        else:
+            return output
 
     def training_step(self, batch, batch_idx):
         inputs, labels = batch

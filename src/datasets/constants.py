@@ -9,7 +9,7 @@ IMAGENET_STD = [0.229, 0.224, 0.225]
 
 # transforms.Normalize() subtracts the mean value and divides by the standard deviation
 # Passing std=[1.0, 1.0, 1.0] means we only perform the mean subtraction.
-# (This is what Caffe did)
+# (PyTorch VGG16 on ImageNet does actual normalization, so use this only when working with the Caffe model)
 MEAN_SUBTRACTION_ONLY = [1.0, 1.0, 1.0]
 
 # Specifiying only one dimension instead of two will preserve aspect ratio
@@ -38,6 +38,6 @@ VAL_TEST_TRANSFORMS = transforms.Compose(
         transforms.Resize(TRANSFORM_TO_SIZE_TEST),
         transforms.CenterCrop(CROP_SIZE),
         transforms.ToTensor(),
-        transforms.Normalize(mean=IMAGENET_MEAN, std=MEAN_SUBTRACTION_ONLY),
+        transforms.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
     ]
 )

@@ -7,10 +7,9 @@ uv run \
     --min-epochs 0 \
     --max-epochs 100 \
     --method "DEX" \
-    --dataset "IMDBWIKI" \
-    --dataset-path "data/imdb-wiki/" \
+    --dataset "CHALEARN" \
+    --dataset-path "data/chalearn_2015/" \
     --outfile-prefix "DEX_IMDBWIKI" \
-
-    # --checkpoint-path "checkpoints/IMDBWIKI_DEX_epoch=28_val_loss=3.36.ckpt" \
+    --checkpoint-path "checkpoints/DEX_IMDBWIKI_epoch=06_val_loss=3.86.ckpt" \
     # --use-weighted-ce \
 
