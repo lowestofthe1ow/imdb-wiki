@@ -1,3 +1,22 @@
+"""
+Make sure to run src/scripts/preprocess_chalearn.sh first.
+Data from ChaLearn LAP 2015 should be in a single directory:
+
+[chalearn_path directory]
+├── raw
+│   ├── test/
+│   ├── train/
+│   └── validation/
+├── test/
+├── train/
+├── validation/
+├── test.csv
+├── train.csv
+└── validation.csv
+
+https://drive.google.com/drive/folders/1fe73NhI7OqmjnB-G6pr3xK8S-_XXgD6j?usp=sharing
+"""
+
 import cv2
 import os
 import pandas as pd
@@ -8,6 +27,7 @@ from PIL import Image
 from pathlib import Path
 from sklearn.model_selection import train_test_split
 from torch.utils.data import Dataset
+from tqdm import tqdm
 
 from src.datasets.constants import TRAIN_TRANSFORMS, VAL_TEST_TRANSFORMS
 
@@ -23,7 +43,7 @@ class ChaLearn2015Dataset(Dataset):
             path_prefix:    Path to prefix to the image paths in the CSV file
         """
         chalearn_train_df = pd.read_csv(Path(chalearn_path) / "train.csv")
-        chalearn_valid_df = pd.read_csv(Path(chalearn_path) / "valid.csv")
+        chalearn_valid_df = pd.read_csv(Path(chalearn_path) / "validation.csv")
 
         chalearn_train_df["file_name"] = chalearn_train_df["file_name"].apply(
             lambda path: os.path.join(chalearn_path, "train", path)
@@ -65,9 +85,10 @@ class ChaLearn2015Dataset(Dataset):
 
 
 def main():
-    transform = transforms.ToPILImage()
-    image, label = IMDBWIKIDataset("data/chalearn_path/").__getitem__(0)
-    transform(image).show()
+    print("Sanity-checking ChaLearn LAP 2015 dataset...")
+    dataset = ChaLearn2015Dataset("data/chalearn_2015")
+    for i in tqdm(range(dataset.__len__())):
+        dataset.__getitem__(i)
 
 
 if __name__ == "__main__":

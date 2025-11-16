@@ -1,3 +1,15 @@
+"""
+Data from IMDB-WIKI should be in a single directory:
+
+[imdbwiki_path directory]
+├── imdb_crop/
+├── wiki_crop/
+└── imdbwiki.csv
+
+For now, just download the cleaned dataset from:
+https://www.kaggle.com/datasets/lorenzmarqueses/imdb-wiki-cleaned
+"""
+
 import cv2
 import os
 import pandas as pd
@@ -8,6 +20,7 @@ from PIL import Image
 from pathlib import Path
 from sklearn.model_selection import train_test_split
 from torch.utils.data import Dataset
+from tqdm import tqdm
 
 from src.datasets.constants import TRAIN_TRANSFORMS, VAL_TEST_TRANSFORMS
 
@@ -51,9 +64,10 @@ class IMDBWIKIDataset(Dataset):
 
 
 def main():
-    transform = transforms.ToPILImage()
-    image, label = IMDBWIKIDataset("data/imdb-wiki/").__getitem__(0)
-    transform(image).show()
+    print("Sanity-checking IMDB-WIKI dataset...")
+    dataset = IMDBWIKIDataset("data/imdb-wiki")
+    for i in tqdm(range(dataset.__len__())):
+        dataset.__getitem__(i)
 
 
 if __name__ == "__main__":

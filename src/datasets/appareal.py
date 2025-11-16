@@ -1,3 +1,20 @@
+"""
+Data from APPA-REAL should be in a single directory:
+
+[appareal_path directory]
+├── gt_avg_test.csv
+├── gt_avg_train.csv
+├── gt_avg_valid.csv
+├── gt_test.csv
+├── gt_train.csv
+├── gt_valid.csv
+├── test/
+├── train/
+└── valid/
+
+https://data.chalearnlap.cvc.uab.cat/AppaRealAge/appa-real-release.zip
+"""
+
 import pandas as pd
 import torch
 import torchvision.transforms as transforms
@@ -5,6 +22,7 @@ import torchvision.transforms as transforms
 from pathlib import Path
 from PIL import Image
 from torch.utils.data import Dataset
+from tqdm import tqdm
 
 from src.datasets.constants import TRAIN_TRANSFORMS, VAL_TEST_TRANSFORMS
 
@@ -77,7 +95,10 @@ class APPAREALDataset(Dataset):
 
 
 def main():
-    print(APPAREALDataset("data/appa-real-release")[0])
+    print("Sanity-checking APPA-REAL dataset...")
+    dataset = APPAREALDataset("data/appa-real-release")
+    for i in tqdm(range(dataset.__len__())):
+        dataset.__getitem__(i)
 
 
 if __name__ == "__main__":

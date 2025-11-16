@@ -1,3 +1,15 @@
+"""
+Data from FairFace (we use padding=0.25) should be in a single directory:
+
+[appareal_path directory]
+├── fairface_label_train.csv
+├── fairface_label_val.csv
+├── train/
+└── val/
+
+https://github.com/dchen236/FairFace
+"""
+
 import numpy as np
 import os
 import pandas as pd
@@ -7,6 +19,7 @@ import torchvision.transforms as transforms
 from PIL import Image
 from pathlib import Path
 from torch.utils.data import Dataset
+from tqdm import tqdm
 
 from src.datasets.constants import TRAIN_TRANSFORMS, VAL_TEST_TRANSFORMS
 
@@ -17,14 +30,13 @@ class FairFaceDataset(Dataset):
     def __init__(self, fairface_path: str, train=True):
         """
         Args:
-            fairface_path: Path that contains
-                `fairface_label_train.csv`, `fairface_label_val.csv`,
-                and `fairface-img-margin025-trainval/`.
+            fairface_path: FairFace dataset directory
         """
         fairface_train_df = pd.read_csv(
             Path(fairface_path) / "fairface_label_train.csv"
         )
         fairface_val_df = pd.read_csv(Path(fairface_path) / "fairface_label_val.csv")
+
         fairface_df = pd.concat([fairface_train_df, fairface_val_df])
 
         def mean_from_age_range_string(age_range_str: str):
@@ -40,9 +52,7 @@ class FairFaceDataset(Dataset):
         self.labels = pd.DataFrame(
             {
                 "full_path": fairface_df["file"].apply(
-                    lambda file_path: os.path.join(
-                        fairface_path, "fairface-img-margin025-trainval", file_path
-                    )
+                    lambda file_path: os.path.join(fairface_path, file_path)
                 ),
                 "age": fairface_df["age"].apply(
                     lambda age_range_str: mean_from_age_range_string(age_range_str)
@@ -73,7 +83,10 @@ class FairFaceDataset(Dataset):
 
 
 def main():
-    print(FairFaceDataset("data/fairface")[0])
+    print("Sanity-checking FairFace dataset...")
+    dataset = FairFaceDataset("data/fairface")
+    for i in tqdm(range(dataset.__len__())):
+        dataset.__getitem__(i)
 
 
 if __name__ == "__main__":

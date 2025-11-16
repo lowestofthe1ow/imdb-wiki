@@ -38,6 +38,6 @@ VAL_TEST_TRANSFORMS = transforms.Compose(
         transforms.Resize(TRANSFORM_TO_SIZE_TEST),
         transforms.CenterCrop(CROP_SIZE),
         transforms.ToTensor(),
-        transforms.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
+        transforms.Normalize(mean=IMAGENET_MEAN, std=MEAN_SUBTRACTION_ONLY),
     ]
 )
