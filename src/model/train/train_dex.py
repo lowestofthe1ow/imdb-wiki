@@ -132,14 +132,21 @@ trainer = L.Trainer(
 
 if args.checkpoint_path:
     print("* .ckpt file provided. Preparing for further training...")
+    trainer.fit(
+        model=model,
+        train_dataloaders=train_loader,
+        val_dataloaders=val_loader,
+        ckpt_path=args.checkpoint_path,
+    )
+    """
     checkpoint = torch.load(args.checkpoint_path, map_location=model.device)[
         "state_dict"
     ]
     model.load_state_dict(checkpoint, strict=False)
+    """
 else:
     print("* No .ckpt file provided. Training from default weights...")
-
-trainer.fit(model=model, train_dataloaders=train_loader, val_dataloaders=val_loader)
+    trainer.fit(model=model, train_dataloaders=train_loader, val_dataloaders=val_loader)
 
 # Save the final model state dict (.pth file) to be safe.
 torch.save(model.state_dict(), "checkpoints/imdbwiki_dex.pth")
