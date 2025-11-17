@@ -21,6 +21,5 @@ dependencies = [
     "torch>=2.9.0",
     "torchvision>=0.24.0",
     "tqdm>=4.67.1",
-    "umap>=0.1.1",
     "umap-learn>=0.5.9.post2",
 ]

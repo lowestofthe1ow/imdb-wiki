@@ -18,7 +18,7 @@ TRANSFORM_TO_SIZE_TRAIN = 256
 
 # For val/test I've found that resizing straight to 224 then center-cropping performs better
 # .......sometimes
-TRANSFORM_TO_SIZE_TEST = 224
+TRANSFORM_TO_SIZE_TEST = 256
 
 CROP_SIZE = [224, 224]
 

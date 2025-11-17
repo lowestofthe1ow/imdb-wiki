@@ -5,11 +5,12 @@ Test inference against APPA-REAL or ChaLearn LAP 2015 testing set
 import argparse
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 import pandas as pd
 import seaborn as sns
 import torch
 import torchvision.transforms as transforms
-import umap
+import umap.umap_ as umap
 
 from PIL import Image
 from sklearn.manifold import TSNE
@@ -107,7 +108,7 @@ sns.scatterplot(
     alpha=0.8,
     palette="viridis",
 )
-plt.savefig("embeddings.png")
+plt.savefig(os.path.basename(args.model_path) + "_embeddings.png")
 
 
 # Print MAE results (apparent age)
