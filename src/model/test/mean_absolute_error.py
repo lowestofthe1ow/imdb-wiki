@@ -19,10 +19,11 @@ from torchvision import models
 from torchvision.models import VGG16_Weights
 from tqdm import tqdm
 
-from src.datasets.constants import VAL_TEST_TRANSFORMS
+from src.datasets.constants import VAL_TEST_TRANSFORMS, VAL_TEST_TRANSFORMS_CAFFE
+from src.model.test.extract_from_caffe import get_state_dict
 from src.modules.finetune_dex import FinetuneDEX
 
-tqdm.pandas()
+tqdm.pandas(leave=False)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--testing-set", default="APPAREAL", type=str)
@@ -72,9 +73,19 @@ match args.testing_set:
 # Load the model
 vgg16 = models.vgg16(weights=VGG16_Weights.DEFAULT)
 vgg16.classifier[6] = torch.nn.Linear(4096, 101)
-checkpoint = torch.load(args.model_path)
+
 model = FinetuneDEX(model=vgg16, criterion=None).to("cuda")
-model.load_state_dict(checkpoint["state_dict"], strict=False)
+
+file_extension = os.path.splitext(args.model_path)[1]
+
+if file_extension == ".ckpt":
+    checkpoint = torch.load(args.model_path)
+    model.load_state_dict(checkpoint["state_dict"], strict=False)
+elif file_extension == ".pth":
+    transform = (
+        VAL_TEST_TRANSFORMS_CAFFE  # Assume Caffe model, use different transforms
+    )
+    model.load_state_dict(get_state_dict(args.model_path))
 
 model.eval()  # Switches model to evaluation mode (needed for inference)
 
@@ -93,7 +104,7 @@ test_images[["estimate", "embeddings"]] = pd.DataFrame(
 # TODO: Look into t-SNE
 print("Saving image embeddings from model...")
 embeddings_array = np.array(test_images["embeddings"].tolist())
-mapper = umap.UMAP(n_components=2, random_state=339)
+mapper = umap.UMAP(n_components=2)
 reduced_embeddings = mapper.fit_transform(embeddings_array)
 
 
@@ -108,7 +119,7 @@ sns.scatterplot(
     alpha=0.8,
     palette="viridis",
 )
-plt.savefig(os.path.basename(args.model_path) + "_embeddings.png")
+plt.savefig(os.path.basename(args.model_path) + f"_{args.testing_set}_embeddings.png")
 
 
 # Print MAE results (apparent age)
