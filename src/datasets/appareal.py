@@ -2,6 +2,9 @@
 Data from APPA-REAL should be in a single directory:
 
 [appareal_path directory]
+├── allcategories_test.csv
+├── allcategories_train.csv
+├── allcategories_valid.csv
 ├── gt_avg_test.csv
 ├── gt_avg_train.csv
 ├── gt_avg_valid.csv

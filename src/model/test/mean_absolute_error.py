@@ -13,14 +13,12 @@ import torchvision.transforms as transforms
 import umap.umap_ as umap
 
 from PIL import Image
-from sklearn.manifold import TSNE
-from sklearn.preprocessing import StandardScaler
 from torchvision import models
 from torchvision.models import VGG16_Weights
 from tqdm import tqdm
 
-from src.datasets.constants import VAL_TEST_TRANSFORMS, VAL_TEST_TRANSFORMS_CAFFE
 from src.model.test.extract_from_caffe import get_state_dict
+from src.model.test.test_on_set import test_on_set
 from src.modules.finetune_dex import FinetuneDEX
 
 tqdm.pandas(leave=False)
@@ -28,107 +26,61 @@ tqdm.pandas(leave=False)
 parser = argparse.ArgumentParser()
 parser.add_argument("--testing-set", default="APPAREAL", type=str)
 parser.add_argument("--model-path", type=str)
+parser.add_argument("--output-plot-path", default="embeddings", type=str)
 args = parser.parse_args()
 
-transform = VAL_TEST_TRANSFORMS  # Image pre-transforms
+OUTPUT_FIGURE_SIZE = (8, 6)  # Figure size in inches
 
+"""
+For the APPA-REAL test set, this should produce a DataFrame with:
 
-def test(model: FinetuneDEX, image_path: str):
-    """Performs forward passes through the model and saves embeddings"""
-    with torch.no_grad():  # No need to calculate gradients during inference
-        image = Image.open(image_path).convert("RGB")
-        try:
-            output, embeddings = model.forward(
-                torch.unsqueeze(transform(image), 0).to("cuda"),
-                capture_embeddings=True,  # Captures embeddings at the last FC layer
-            )
+ #   Column            Non-Null Count  Dtype
+---  ------            --------------  -----
+ 0   file_name         1978 non-null   object
+ 1   num_ratings       1978 non-null   int64
+ 2   apparent_age_avg  1978 non-null   float64
+ 3   apparent_age_std  1978 non-null   float64
+ 4   real_age          1978 non-null   int64
+ 5   race              1978 non-null   object
+ 6   gender            1978 non-null   object
+ 7   estimate          1978 non-null   float64
+ 8   embeddings        1978 non-null   object
+"""
 
-            # Move data frrom CUDA device back to CPU (required)
-            output, embeddings = output.to("cpu"), embeddings.to("cpu")
+results = test_on_set(args.testing_set, args.model_path)
 
-            # DEX softmax expected value
-            prob = torch.nn.functional.softmax(output, dim=1)[0]
-            age_range = torch.arange(101)  # [1, 2, ..., 101]
-            estimated_age = (prob * age_range).sum()
+print(results.info())
+print(results)
 
-            return estimated_age.item(), torch.flatten(embeddings)
-        except Exception as e:
-            print(f"Error opening `{image_path}`:\n{e}")
+# MAE results (apparent age)
+mae_apparent = abs(results["estimate"] - results["apparent_age_avg"]).mean()
+print(f"MAE (apparent) = {mae_apparent}")
 
-
-# Get testing set from either APPA-REAL or ChaLearn LAP 2015
-test_images = None
-match args.testing_set:
-    case "APPAREAL":
-        test_images = pd.read_csv("data/appa-real-release/gt_avg_test.csv")
-        test_images["file_name"] = (
-            "data/appa-real-release/test/"
-            + test_images["file_name"]
-            + "_face.jpg"  # ..._face.jpg is the cropped face image
-        )
-    case "CHALEARN":
-        test_images = pd.read_csv("data/chalearn_2015/test.csv")
-        test_images["file_name"] = "data/chalearn_2015/test/" + test_images["file_name"]
-
-# Load the model
-vgg16 = models.vgg16(weights=VGG16_Weights.DEFAULT)
-vgg16.classifier[6] = torch.nn.Linear(4096, 101)
-
-model = FinetuneDEX(model=vgg16, criterion=None).to("cuda")
-
-file_extension = os.path.splitext(args.model_path)[1]
-
-if file_extension == ".ckpt":
-    checkpoint = torch.load(args.model_path)
-    model.load_state_dict(checkpoint["state_dict"], strict=False)
-elif file_extension == ".pth":
-    transform = (
-        VAL_TEST_TRANSFORMS_CAFFE  # Assume Caffe model, use different transforms
-    )
-    model.load_state_dict(get_state_dict(args.model_path))
-
-model.eval()  # Switches model to evaluation mode (needed for inference)
-
-
-# Get model outputs on testing set
-# Series of tuples containing age estimates and embeddings
-output = test_images["file_name"].progress_apply(lambda x: test(model, x))
-
-# Split into the estimate and embeddings columns
-test_images[["estimate", "embeddings"]] = pd.DataFrame(
-    output.tolist(), index=test_images.index
-)
+# MAE results (real age, only for APPA-REAL)
+if args.testing_set == "APPAREAL":
+    mae_real = abs(results["estimate"] - results["real_age"]).mean()
+    print(f"MAE (real) = {mae_real}")
 
 
 # Use UMAP for dimensionality reduction
-# TODO: Look into t-SNE
+# TODO: Look into t-SNE maybe? But I think UMAP is ok
 print("Saving image embeddings from model...")
-embeddings_array = np.array(test_images["embeddings"].tolist())
-mapper = umap.UMAP(n_components=2)
+embeddings_array = np.array(results["embeddings"].tolist())
+mapper = umap.UMAP(n_components=2)  # 2D scatterplot
 reduced_embeddings = mapper.fit_transform(embeddings_array)
-
 
 # Plot reduced embeddings on a scatterplot
 print("Saving to scatterplot...")
-plt.figure(figsize=(8, 6))
+plt.figure(figsize=OUTPUT_FIGURE_SIZE)
 plt.title("Embeddings")
 sns.scatterplot(
     x=reduced_embeddings[:, 0],
     y=reduced_embeddings[:, 1],
-    hue=test_images["apparent_age_avg"],
+    hue=results["apparent_age_avg"],
     alpha=0.8,
     palette="viridis",
 )
-plt.savefig(os.path.basename(args.model_path) + f"_{args.testing_set}_embeddings.png")
+out_filename = os.path.basename(args.model_path) + f"_{args.testing_set}_embeddings.png"
 
-
-# Print MAE results (apparent age)
-test_images["error_apparent"] = abs(
-    test_images["estimate"] - test_images["apparent_age_avg"]
-)
-print(f"MAE (apparent) = {test_images["error_apparent"].mean()}")
-
-# Print MAE results (real age, only for APPA-REAL)
-if args.testing_set == "APPAREAL":
-    test_images["error_real"] = abs(test_images["estimate"] - test_images["real_age"])
-    print(f"MAE (real) = {test_images["error_real"].mean()}")
+os.makedirs(args.output_plot_path, exist_ok=True)
+plt.savefig(os.path.join(args.output_plot_path, out_filename))

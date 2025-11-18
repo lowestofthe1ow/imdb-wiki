@@ -55,6 +55,6 @@ VAL_TEST_TRANSFORMS_CAFFE = transforms.Compose(
         ),
         transforms.PILToTensor(),
         transforms_v2.ToDtype(torch.float32, scale=False),
-        transforms.Normalize(mean=IMAGENET_MEAN_CAFFE, std=[1, 1, 1]),
+        transforms.Normalize(mean=IMAGENET_MEAN_CAFFE, std=MEAN_SUBTRACTION_ONLY),
     ]
 )
