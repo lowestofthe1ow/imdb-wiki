@@ -35,6 +35,7 @@ parser.add_argument("--dataset", default="IMDBWIKI", type=str)
 parser.add_argument("--dataset-path", type=str)
 parser.add_argument("--outfile-prefix", default="model", type=str)
 parser.add_argument("--use-weighted-ce", action=argparse.BooleanOptionalAction)
+parser.add_argument("--resume", action=argparse.BooleanOptionalAction)
 args = parser.parse_args()
 
 # Load the dataset
@@ -132,18 +133,23 @@ trainer = L.Trainer(
 
 if args.checkpoint_path:
     print("* .ckpt file provided. Preparing for further training...")
-    trainer.fit(
-        model=model,
-        train_dataloaders=train_loader,
-        val_dataloaders=val_loader,
-        ckpt_path=args.checkpoint_path,
-    )
-    """
-    checkpoint = torch.load(args.checkpoint_path, map_location=model.device)[
-        "state_dict"
-    ]
-    model.load_state_dict(checkpoint, strict=False)
-    """
+    if args.resume:
+        print('* Training set to "resume". Restoring state from checkpoint...')
+        trainer.fit(
+            model=model,
+            train_dataloaders=train_loader,
+            val_dataloaders=val_loader,
+            ckpt_path=args.checkpoint_path,
+        )
+    else:
+        print('* Training not set to "resume". Starting new fine-tuning phase...')
+        checkpoint = torch.load(args.checkpoint_path, map_location=model.device)[
+            "state_dict"
+        ]
+        model.load_state_dict(checkpoint, strict=False)
+        trainer.fit(
+            model=model, train_dataloaders=train_loader, val_dataloaders=val_loader
+        )
 else:
     print("* No .ckpt file provided. Training from default weights...")
     trainer.fit(model=model, train_dataloaders=train_loader, val_dataloaders=val_loader)
