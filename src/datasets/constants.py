@@ -27,7 +27,7 @@ CROP_SIZE = [224, 224]
 TRAIN_TRANSFORMS = transforms.Compose(
     [
         transforms.Resize(TRANSFORM_TO_SIZE_TRAIN),
-        transforms.RandomCrop(CROP_SIZE),
+        transforms.CenterCrop(CROP_SIZE),
         # Original paper randomly flipped training images but only in training phase
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
