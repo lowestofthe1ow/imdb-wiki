@@ -17,6 +17,7 @@ from torchvision import models
 from src.datasets.imdbwiki import IMDBWIKIDataset
 from src.datasets.appareal import APPAREALDataset
 from src.datasets.chalearn2015 import ChaLearn2015Dataset
+from src.datasets.fairface import FairFaceDataset
 from src.modules.finetune_dex import FinetuneDEX
 from src.modules.mean_variance_loss import MeanVarianceLoss
 
@@ -47,6 +48,8 @@ match args.dataset:
         DatasetClass = APPAREALDataset
     case "CHALEARN":
         DatasetClass = ChaLearn2015Dataset
+    case "FAIRFACE":
+        DatasetClass = FairFaceDataset
 
 dataset = DatasetClass(args.dataset_path)
 

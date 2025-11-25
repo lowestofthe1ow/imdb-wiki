@@ -43,7 +43,7 @@ class FairFaceDataset(Dataset):
             """String '1-10' will return 5.5"""
             if "-" in age_range_str:
                 first, second = age_range_str.split("-")
-                return (int(first) + int(second)) / 2
+                return int((int(first) + int(second)) / 2)
             elif age_range_str == "more than 70":  # special case
                 return 70
             else:
