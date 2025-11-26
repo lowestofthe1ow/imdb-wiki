@@ -71,5 +71,5 @@ os.makedirs(args.output_path, exist_ok=True)
 
 print("Cosine similarity df ready:")
 print(cosine_sim.info())
-print(f"Writing to file ")
-cosine_sim.to_pickle(os.path.join(args.output_path, "cosine_sim.pkl"))
+print("Writing to file cosine_sim.pkl")
+cosine_sim.to_pickle("cosine_sim.pkl")

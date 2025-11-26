@@ -111,3 +111,6 @@ summarized_results_sorted = summarized_results_grouped.reset_index().sort_values
 )
 
 print(summarized_results_sorted)
+
+print("Writing to file race_gender.pkl")
+summarized_results_sorted.to_pickle("race_gender.pkl")
