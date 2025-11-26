@@ -14,5 +14,36 @@
   across each demographic group, split by race and sex, by using an
   off-the-shelf classifier.
 
-  
+## Getting the performance results:
 
+1. Download `models.zip` from [here](https://drive.google.com/drive/folders/1dFLn0RZ2FlvU8WjqwJ-YrOMor_SwTPfP?usp=sharing) and unzip to the `checkpoints` directory. It should look like this:
+
+```
+checkpoints
+├── Caffe_IMDBWIKI_CHALEARN.pth
+├── Caffe_IMDBWIKI.pth
+├── CEL_CHALEARN_epoch=05_val_loss=3.69.ckpt 
+├── CEL_IMDBWIKI_APPAREAL_epoch=09_val_loss=2.96.ckpt
+├── CEL_IMDBWIKI_CHALEARN_epoch=13_val_loss=2.81.ckpt
+├── CEL_IMDBWIKI_epoch=26_val_loss=3.36.ckpt
+├── checkpoint_captions.csv
+├── MVL_IMDBWIKI_APPAREAL_epoch=06_val_loss=5.95.ckpt
+├── MVL_IMDBWIKI_CHALEARN_epoch=04_val_loss=5.94.ckpt
+└── MVL_IMDBWIKI_epoch=10_val_loss=10.92.ckpt
+```
+
+2. Get the datasets. Check the respective `.py` scripts in `src/datasets` for instructions, e.g.:
+
+```
+data
+├── appa-real-release/
+├── chalearn_2015/
+├── fairface/
+└── imdb-wiki/
+```
+
+3. Run `src/scripts.test_mae.sh`. This should create a `pkl` directory containing the raw results for each model as well as `embeddings` containing image embeddings at the last FC layers.
+
+4. Run `python3 -m src.model.test.mean_absolute_error`. This will show you the performance results per race and gender
+
+5. Run `python3 -m src.model.test.cosine_sim`. This will create a `cosine_sim.pkl` file at the root directory which will have cosine similarities for each image vs the mean embeddings for that image's apparent age, per model.

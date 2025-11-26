@@ -27,9 +27,23 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--testing-set", default="APPAREAL", type=str)
 parser.add_argument("--model-path", type=str)
 parser.add_argument("--output-plot-path", default="embeddings", type=str)
+parser.add_argument("--output-pkl-path", default="pkl", type=str)
+parser.add_argument(
+    "--model-captions-path", default="checkpoints/checkpoint_captions.csv", type=str
+)
 args = parser.parse_args()
 
 OUTPUT_FIGURE_SIZE = (8, 6)  # Figure size in inches
+
+
+def get_caption(model_path):
+    """Converts model filename to a more descriptive caption.
+    By default, uses CSV file in /checkpoints
+    """
+    captions = pd.read_csv(args.model_captions_path, skipinitialspace=True)
+    value = captions.loc[captions["model_path"] == model_path, "caption"]
+    return value.item()
+
 
 """
 For the APPA-REAL test set, this should produce a DataFrame with:
@@ -46,11 +60,20 @@ For the APPA-REAL test set, this should produce a DataFrame with:
  7   estimate          1978 non-null   float64
  8   embeddings        1978 non-null   object
 """
-
 results = test_on_set(args.testing_set, args.model_path)
 
-print(results.info())
-print(results)
+model_caption = get_caption(args.model_path)
+results["model"] = model_caption
+results["testing_set"] = args.testing_set
+
+# We write the testing results to a .pkl file for easy storage
+# Filename example: Original Caffe model on IMDB-WIKI + ChaLearn LAP_test on APPAREAL_results.pkl
+out_filename = model_caption + f"_test on {args.testing_set}_results.pkl"
+out_fullpath = os.path.join(args.output_pkl_path, out_filename)
+os.makedirs(args.output_pkl_path, exist_ok=True)
+results.to_pickle(out_fullpath)
+
+print(f"Wrote to .pkl file at {out_fullpath}")
 
 # MAE results (apparent age)
 mae_apparent = abs(results["estimate"] - results["apparent_age_avg"]).mean()
@@ -61,6 +84,10 @@ if args.testing_set == "APPAREAL":
     mae_real = abs(results["estimate"] - results["real_age"]).mean()
     print(f"MAE (real) = {mae_real}")
 
+epsilon = (
+    1 - np.exp(-1 * mae_apparent**2 / (2 * (results["apparent_age_std"] ** 2))).mean()
+)
+print(f"Epsilon = {epsilon}")
 
 # Use UMAP for dimensionality reduction
 # TODO: Look into t-SNE maybe? But I think UMAP is ok
@@ -72,7 +99,7 @@ reduced_embeddings = mapper.fit_transform(embeddings_array)
 # Plot reduced embeddings on a scatterplot
 print("Saving to scatterplot...")
 plt.figure(figsize=OUTPUT_FIGURE_SIZE)
-plt.title("Embeddings")
+plt.title(f"UMAP embeddings\n{model_caption}, testing on {args.testing_set}")
 sns.scatterplot(
     x=reduced_embeddings[:, 0],
     y=reduced_embeddings[:, 1],
