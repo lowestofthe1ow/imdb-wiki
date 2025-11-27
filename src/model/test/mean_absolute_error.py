@@ -6,6 +6,7 @@ import pandas as pd
 import torch
 from torchvision import models
 from PIL import Image
+from src.modules.finetune_amrl import FinetuneAMRL
 from src.modules.finetune_mvl import FinetuneMVL
 from src.modules.finetune_dex import FinetuneDEX
 from torchvision.models import VGG16_Weights
@@ -41,8 +42,10 @@ transform = transforms.Compose(
 
 if "DEX" in args.model_path:
     mode = "DEX"
-else:
+elif "MVL" in args.model_path:
     mode = "MVL"
+elif "AMRL" in args.model_path:
+    mode = "AMRL"
 
 if mode == "DEX":
     layer_params = [
@@ -58,6 +61,8 @@ if mode == "DEX":
     )
 elif mode == "MVL":
     model = FinetuneMVL.load_from_checkpoint(CHECKPOINT, model=vgg16, batch_size=128)
+elif mode == "AMRL":
+    model = FinetuneAMRL.load_from_checkpoint(CHECKPOINT, model=vgg16, batch_size=128)
 
 model.eval()
 

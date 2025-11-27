@@ -49,4 +49,10 @@ time uv run \
     --model-path checkpoints/IMDBWIKI_MVL_epoch=10_val_loss=11.68.ckpt-FINETUNED-ON_APPAREAL_MVL_epoch=10_val_loss=17.03.ckpt-FINETUNED-ON_FAIRFACE_MVL_epoch=16_val_loss=14.39.ckpt \
     > results/mvl-appareal-fairface.txt
 
+echo test amrl
+time uv run \
+    -m src.model.test.mean_absolute_error \
+    --model-path checkpoints/IMDBWIKI_AMRL_epoch=10_val_loss=10.23.ckpt \
+    > results/amrl.txt
+
 
