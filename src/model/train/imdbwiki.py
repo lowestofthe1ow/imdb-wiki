@@ -6,7 +6,7 @@
 # --workers     Number of CPU workers
 # --min-epochs  Minimum number of epochs, even if early stop is triggered
 # --max-epochs  Maximum number of epochs, even if early stop is NOT triggered
-# --method      "MVL" or "DEX"
+# --method      "MVL" or "DEX" or "AMRL"
 
 import torch
 import lightning as L
@@ -20,6 +20,7 @@ from torch.utils.data import Dataset, DataLoader, random_split
 from src.datasets.imdbwiki import IMDBWIKIDataset
 from src.modules.finetune_dex import FinetuneDEX
 from src.modules.finetune_mvl import FinetuneMVL
+from src.modules.finetune_amrl import FinetuneAMRL
 from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 from lightning.pytorch.callbacks import ModelCheckpoint
 from sklearn.utils.class_weight import compute_class_weight
@@ -80,8 +81,7 @@ vgg16 = models.vgg16(weights=models.VGG16_Weights.DEFAULT)
 
 # Change output layer to have 101 neurons, one for each age class
 vgg16.classifier[6] = torch.nn.Linear(
-    4096,  # 4096 inputs to the final fully connected layer
-    len(age_classes)
+    4096, len(age_classes)  # 4096 inputs to the final fully connected layer
 )
 
 print("> Data loaded from /data/imdbwiki.csv.")
@@ -92,6 +92,8 @@ match args.method:
         model = FinetuneDEX(model=vgg16, class_weights=weights)
     case "MVL":
         model = FinetuneMVL(model=vgg16, class_weights=weights)
+    case "AMRL":
+        model = FinetuneAMRL(model=vgg16, class_weights=weights)
 
 
 # Set up saving model checkpoints

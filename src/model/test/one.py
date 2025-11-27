@@ -8,7 +8,9 @@ from src.modules.finetune_mvl import FinetuneMVL
 from torchvision.models import VGG16_Weights
 import torchvision.transforms as transforms
 
-image = Image.open("data/wiki_crop/77/10007577_1988-06-16_2007.jpg").convert("RGB")
+image_path = "data/wiki_crop/77/10007577_1988-06-16_2007.jpg"
+
+image = Image.open(image_path).convert("RGB")
 transform = transforms.Compose(
     [
         transforms.Resize((256, 256)),
@@ -26,7 +28,7 @@ vgg16 = models.vgg16(pretrained=True)
 vgg16.classifier[6] = torch.nn.Linear(4096, 101)
 
 # CHECKPOINT = "my_model_epoch=09_val_loss=0.00.ckpt"
-CHECKPOINT = "my_model_epoch=00_val_loss=0.00.ckpt"
+CHECKPOINT = "models/IMDBWIKI_MVL_epoch04_val_loss20.49.ckpt-FINETUNED-ON_APPAREAL_MVL_epoch=05_val_loss=14.88.ckpt"
 model = FinetuneMVL.load_from_checkpoint(CHECKPOINT, model=vgg16, batch_size=128)
 model.eval()
 
