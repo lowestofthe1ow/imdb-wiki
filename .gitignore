@@ -232,3 +232,5 @@ __marimo__/
 
 # Test image
 test.jpg
+
+*.pth
