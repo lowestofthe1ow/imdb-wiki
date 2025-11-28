@@ -46,4 +46,13 @@ data
 
 4. Run `python3 -m src.model.test.mean_absolute_error`. This will show you the performance results per race and gender
 
+From here you can...
+
 5. Run `python3 -m src.model.test.cosine_sim`. This will create a `cosine_sim.pkl` file at the root directory which will have cosine similarities for each image vs the mean embeddings for that image's apparent age, per model.
+
+6. Run `python3 -m src.model.test.mae_per_demographic`. This will show you performance stats per demographic.
+
+## How do I add models
+
+1. Put the `.ckpt` in your `checkpoints/` dir
+2. Add it to `checkpoints/checkpoint_captions.csv`.

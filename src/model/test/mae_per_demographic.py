@@ -97,9 +97,30 @@ summarized_results = summarized_results[
     ["model", "race", "gender", "mae_apparent", "mae_real", "epsilon"]
 ]
 
+summarized_results = summarized_results.groupby(["model", "race", "gender"]).mean(
+    numeric_only=True
+)
+
+print("Summarized performance results per demographic group:")
+print(summarized_results)
+print("----------")
+
+summarized_variances = summarized_results.groupby(["model"]).std(numeric_only=True)
+
+print("Variances in performance per demographic group:")
+print(summarized_variances.sort_values(by=["mae_apparent"]))
+print("----------")
+
+"""
 # ANOVA lets us measure variances between each group
 anova_results = summarized_results.groupby("model").apply(anova_race_gender)
 summarized_results = summarized_results.merge(anova_results, on="model", how="left")
+
+print(
+    (summarized_results.groupby(["model"]).mean(numeric_only=True)).sort_values(
+        by=["F-statistic"]
+    )
+)
 
 summarized_results_grouped = summarized_results.groupby(
     ["model", "race", "gender"]
@@ -112,5 +133,7 @@ summarized_results_sorted = summarized_results_grouped.reset_index().sort_values
 
 print(summarized_results_sorted)
 
+
 print("Writing to file race_gender.pkl")
 summarized_results_sorted.to_pickle("race_gender.pkl")
+"""
