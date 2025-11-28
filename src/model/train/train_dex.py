@@ -11,13 +11,14 @@ from itertools import chain
 from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 from sklearn.utils.class_weight import compute_class_weight
-from torch.utils.data import Dataset, DataLoader, random_split
+from torch.utils.data import DataLoader, Dataset, random_split
 from torchvision import models
 
 from src.datasets.imdbwiki import IMDBWIKIDataset
 from src.datasets.appareal import APPAREALDataset
 from src.datasets.chalearn2015 import ChaLearn2015Dataset
 from src.datasets.fairface import FairFaceDataset
+from src.modules.adaptive_mean_residue_loss import AdaptiveMeanResidueLoss
 from src.modules.finetune_dex import FinetuneDEX
 from src.modules.mean_variance_loss import MeanVarianceLoss
 
@@ -50,6 +51,8 @@ match args.dataset:
         DatasetClass = ChaLearn2015Dataset
     case "FAIRFACE":
         DatasetClass = FairFaceDataset
+
+assert DatasetClass
 
 dataset = DatasetClass(args.dataset_path)
 
@@ -102,7 +105,7 @@ vgg16.classifier[6] = torch.nn.Linear(
     4096, len(age_classes)  # 4096 inputs to the final fully connected layer
 )
 
-# Initialize PyTorch Lightning module, using CE loss or MVL
+# Initialize PyTorch Lightning module, using CE loss, MVL, or AMRL
 match args.method:
     case "DEX":
         model = FinetuneDEX(
@@ -112,7 +115,11 @@ match args.method:
         model = FinetuneDEX(
             model=vgg16, criterion=MeanVarianceLoss(0.2, 0.05, weights_tensor)
         )
-
+    case "AMRL":
+        model = FinetuneDEX(
+            model=vgg16,
+            criterion=AdaptiveMeanResidueLoss(0.2, 0.05, weights_tensor=weights_tensor),
+        )
 
 # Set up saving model checkpoints
 os.makedirs("checkpoints", exist_ok=True)
