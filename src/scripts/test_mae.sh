@@ -70,3 +70,13 @@ uv run \
 
 # This is our best recreation of DEX so far, with MAE of about 3.57 on ChaLearn LAP '15
 # https://drive.google.com/drive/folders/1dFLn0RZ2FlvU8WjqwJ-YrOMor_SwTPfP?usp=sharing
+
+# TODO: Execute this
+# (I think my `data/` directory structure is different from yours -- Justin to Lorenz)
+
+echo -e "\nIMDB-WIKI, testing on ChaLearn test set"
+
+uv run \
+    -m src.model.test.mean_absolute_error \
+    --testing-set "CHALEARN" \
+    --model-path "checkpoints/AMRL_IMDBWIKI_epoch=07_val_loss=10.19.ckpt" \
