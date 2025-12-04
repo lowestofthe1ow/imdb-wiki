@@ -12,6 +12,7 @@ import torch
 import torchvision.transforms as transforms
 import umap.umap_ as umap
 
+from pathlib import Path
 from PIL import Image
 from torchvision import models
 from torchvision.models import VGG16_Weights
@@ -60,7 +61,7 @@ For the APPA-REAL test set, this should produce a DataFrame with:
  7   estimate          1978 non-null   float64
  8   embeddings        1978 non-null   object
 """
-results = test_on_set(args.testing_set, args.model_path)
+results = test_on_set(args.testing_set, args.model_path, Path("results") / "saliency_outputs" / os.path.basename(args.model_path))
 
 model_caption = get_caption(args.model_path)
 results["model"] = model_caption

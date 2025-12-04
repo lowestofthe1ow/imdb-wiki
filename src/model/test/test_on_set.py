@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 import torch
+from typing import Optional
 import torchvision.transforms as transforms
 import umap.umap_ as umap
 
@@ -11,9 +12,9 @@ from torchvision.models import VGG16_Weights
 from src.datasets.constants import VAL_TEST_TRANSFORMS, VAL_TEST_TRANSFORMS_CAFFE
 from src.model.test.extract_from_caffe import get_state_dict
 from src.modules.finetune_dex import FinetuneDEX
+from src.modules.saliency_utils import compute_gradcam, save_saliency_overlay
 
-
-def test(model: FinetuneDEX, image_path: str, transform):
+def test(model: FinetuneDEX, image_path: str, transform, save_saliency_dir: Optional[str] = None):
     """Performs forward passes through the model and saves embeddings
 
     Args:
@@ -21,9 +22,11 @@ def test(model: FinetuneDEX, image_path: str, transform):
     """
     with torch.no_grad():  # No need to calculate gradients during inference
         image = Image.open(image_path).convert("RGB")
+
         try:
+            inp_tensor = torch.unsqueeze(transform(image), 0).to("cuda")
             output, embeddings = model.forward(
-                torch.unsqueeze(transform(image), 0).to("cuda"),
+                inp_tensor,
                 capture_embeddings=True,  # Captures embeddings at the last FC layer
             )
 
@@ -35,12 +38,28 @@ def test(model: FinetuneDEX, image_path: str, transform):
             age_range = torch.arange(101)
             estimated_age = (prob * age_range).sum()
 
+            # optionally save saliency overlay (Grad-CAM) for this image
+            if save_saliency_dir is not None:
+                try:
+                    # compute Grad-CAM with gradients enabled (we're running inside a
+                    # torch.no_grad() block for inference; temporarily enable grads)
+                    with torch.enable_grad():
+                        # use last conv layer in VGG features by default
+                        target_layer = model.model.features[-1]
+                        cam = compute_gradcam(model.model, inp_tensor, target_layer)
+
+                    os.makedirs(save_saliency_dir, exist_ok=True)
+                    out_path = os.path.join(save_saliency_dir, os.path.basename(image_path) + '_gradcam.png')
+                    save_saliency_overlay(out_path, image, cam[0])
+                except Exception as e:
+                    print('Failed to save saliency for', image_path, e)
+
             return estimated_age.item(), torch.flatten(embeddings)
         except Exception as e:
             print(f"Error opening `{image_path}`:\n{e}")
 
 
-def test_on_set(testing_set, model_path):
+def test_on_set(testing_set, model_path, save_saliency_dir: Optional[str] = None):
     """Tests a model on a testing set
 
     Args:
@@ -94,7 +113,7 @@ def test_on_set(testing_set, model_path):
     # Get model outputs on testing set
     # Series of tuples containing age estimates and embeddings
     output = test_images["file_name"].progress_apply(
-        lambda x: test(model, x, transform)
+        lambda x: test(model, x, transform, save_saliency_dir=save_saliency_dir)
     )
 
     # Split into the estimate and embeddings columns

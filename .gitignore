@@ -234,3 +234,9 @@ __marimo__/
 test.jpg
 
 *.pth
+data.old
+
+pkl/*
+results/*
+embeddings/*
+checkpoints/*

@@ -16,6 +16,9 @@ Data from APPA-REAL should be in a single directory:
 └── valid/
 
 https://data.chalearnlap.cvc.uab.cat/AppaRealAge/appa-real-release.zip
+
+For allcategories_*.csv:
+http://sergioescalera.com/wp-content/uploads/2018/06/allcategories_trainvalidtest_split.zip
 """
 
 import pandas as pd
