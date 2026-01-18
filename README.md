@@ -11,8 +11,7 @@
   these modifications to the original architecture predict one's apparent age
   better compared to the original architecture.
 * We will also try to measure the accuracy of these different architectures
-  across each demographic group, split by race and sex, by using an
-  off-the-shelf classifier.
+  across each demographic group, split by race and sex. (for the APPA-REAL dataset)
 
 ## Getting the performance results:
 
