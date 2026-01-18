@@ -27,7 +27,7 @@ tqdm.pandas(leave=False)
 parser = argparse.ArgumentParser()
 parser.add_argument("--testing-set", default="APPAREAL", type=str)
 parser.add_argument("--model-path", type=str)
-parser.add_argument("--output-plot-path", default="embeddings", type=str)
+parser.add_argument("--output-plot-path", default="results", type=str)
 parser.add_argument("--output-pkl-path", default="pkl", type=str)
 parser.add_argument(
     "--model-captions-path", default="checkpoints/checkpoint_captions.csv", type=str
@@ -61,7 +61,8 @@ For the APPA-REAL test set, this should produce a DataFrame with:
  7   estimate          1978 non-null   float64
  8   embeddings        1978 non-null   object
 """
-results = test_on_set(args.testing_set, args.model_path, Path("results") / "saliency_outputs" / os.path.basename(args.model_path))
+results_dir = Path("results") / args.testing_set / os.path.basename(args.model_path)
+results = test_on_set(args.testing_set, args.model_path, results_dir)
 
 model_caption = get_caption(args.model_path)
 results["model"] = model_caption
@@ -76,19 +77,34 @@ results.to_pickle(out_fullpath)
 
 print(f"Wrote to .pkl file at {out_fullpath}")
 
-# MAE results (apparent age)
-mae_apparent = abs(results["estimate"] - results["apparent_age_avg"]).mean()
-print(f"MAE (apparent) = {mae_apparent}")
+def compute_mae(results: pd.DataFrame, age_column: str) -> float:
+    """Computes Mean Absolute Error (MAE) based on testing set"""
+    return abs(results["estimate"] - results[age_column]).mean()
 
-# MAE results (real age, only for APPA-REAL)
-if args.testing_set == "APPAREAL":
-    mae_real = abs(results["estimate"] - results["real_age"]).mean()
-    print(f"MAE (real) = {mae_real}")
+def compute_epsilon(mae: float, std_column: pd.Series) -> float:
+    """Computes epsilon value based on MAE and standard deviation column"""
+    return (1 - np.exp(-1 * mae**2 / (2 * (std_column ** 2))).mean())
 
-epsilon = (
-    1 - np.exp(-1 * mae_apparent**2 / (2 * (results["apparent_age_std"] ** 2))).mean()
-)
-print(f"Epsilon = {epsilon}")
+match args.testing_set:
+    case "CHALEARN":
+        mae_apparent = compute_mae(results, "apparent_age_avg")
+        epsilon = compute_epsilon(mae_apparent, results["apparent_age_std"])
+        print(f"MAE (apparent) = {mae_apparent}")
+        print(f"Epsilon = {epsilon}")
+        umap_hue = results["apparent_age_avg"]
+    case "APPAREAL":
+        mae_apparent = compute_mae(results, "apparent_age_avg")
+        epsilon = compute_epsilon(mae_apparent, results["apparent_age_std"])
+        mae_real = compute_mae(results, "real_age")
+        umap_hue = results["real_age"]
+        print(f"MAE (apparent) = {mae_apparent}")
+        print(f"MAE (real) = {mae_real}")
+        print(f"Epsilon = {epsilon}")
+    case "FILIPINO_FACES":
+        mae_real = compute_mae(results, "age")
+        umap_hue = results["age"]
+        print(f"MAE (real) = {mae_real}")
+
 
 # Use UMAP for dimensionality reduction
 # TODO: Look into t-SNE maybe? But I think UMAP is ok
@@ -104,11 +120,13 @@ plt.title(f"UMAP embeddings\n{model_caption}, testing on {args.testing_set}")
 sns.scatterplot(
     x=reduced_embeddings[:, 0],
     y=reduced_embeddings[:, 1],
-    hue=results["apparent_age_avg"],
+    hue=umap_hue,
     alpha=0.8,
     palette="viridis",
 )
-out_filename = os.path.basename(args.model_path) + f"_{args.testing_set}_embeddings.png"
 
-os.makedirs(args.output_plot_path, exist_ok=True)
-plt.savefig(os.path.join(args.output_plot_path, out_filename))
+model_basename = os.path.basename(args.model_path)
+out_filename = f"{model_basename}_{args.testing_set}_embeddings.png"
+out_folder = os.path.join(args.output_plot_path, args.testing_set, model_basename)
+os.makedirs(out_folder, exist_ok=True)
+plt.savefig(os.path.join(out_folder, out_filename))

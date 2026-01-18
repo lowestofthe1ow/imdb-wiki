@@ -19,5 +19,13 @@ tail -n +2 "$CSV" | while IFS=, read -ra line; do
             --model-path "$MODEL_PATH" \
             --model-captions-path "$CSV"
         echo "----------"
+
+        echo "Testing $MODEL_PATH on Filipino"
+        uv run \
+            -m src.model.test.mean_absolute_error \
+            --testing-set "FILIPINO_FACES" \
+            --model-path "$MODEL_PATH" \
+            --model-captions-path "$CSV"
+        echo "----------"
     fi
 done
