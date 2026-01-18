@@ -28,7 +28,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--testing-set", default="APPAREAL", type=str)
 parser.add_argument("--model-path", type=str)
 parser.add_argument("--output-plot-path", default="results", type=str)
-parser.add_argument("--output-pkl-path", default="pkl", type=str)
+parser.add_argument("--output-pkl-path", default="results", type=str)
 parser.add_argument(
     "--model-captions-path", default="checkpoints/checkpoint_captions.csv", type=str
 )
@@ -70,10 +70,17 @@ results["testing_set"] = args.testing_set
 
 # We write the testing results to a .pkl file for easy storage
 # Filename example: Original Caffe model on IMDB-WIKI + ChaLearn LAP_test on APPAREAL_results.pkl
-out_filename = model_caption + f"_test on {args.testing_set}_results.pkl"
-out_fullpath = os.path.join(args.output_pkl_path, out_filename)
-os.makedirs(args.output_pkl_path, exist_ok=True)
+model_basename = os.path.basename(args.model_path)
+out_folder = os.path.join(args.output_plot_path, args.testing_set, model_basename)
+os.makedirs(out_folder, exist_ok=True)
+
+out_filename = f"{model_caption}_test on {args.testing_set}_results.pkl"
+out_fullpath = os.path.join(out_folder, out_filename)
 results.to_pickle(out_fullpath)
+
+# Support old path for backward compatibility with other scripts (e.g. cosine_sim.py)
+# TODO: Remove this in the future
+results.to_pickle(os.path.join("pkl", out_filename))
 
 print(f"Wrote to .pkl file at {out_fullpath}")
 
@@ -125,8 +132,5 @@ sns.scatterplot(
     palette="viridis",
 )
 
-model_basename = os.path.basename(args.model_path)
 out_filename = f"{model_basename}_{args.testing_set}_embeddings.png"
-out_folder = os.path.join(args.output_plot_path, args.testing_set, model_basename)
-os.makedirs(out_folder, exist_ok=True)
 plt.savefig(os.path.join(out_folder, out_filename))

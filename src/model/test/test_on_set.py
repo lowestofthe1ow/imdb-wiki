@@ -97,6 +97,8 @@ def test_on_set(testing_set, model_path, results_dir: Optional[str] = None):
             # Keep gender column as is
             test_images = test_images[["file_name", "age", "gender"]]
 
+    assert test_images is not None, f"Testing set {testing_set} not recognized. Please choose APPAREAL, CHALEARN, or FILIPINO_FACES, or define a new testing set."
+
     # Load the model
     vgg16 = models.vgg16(weights=VGG16_Weights.DEFAULT)
     vgg16.classifier[6] = torch.nn.Linear(4096, 101)
