@@ -80,6 +80,7 @@ results.to_pickle(out_fullpath)
 
 # Support old path for backward compatibility with other scripts (e.g. cosine_sim.py)
 # TODO: Remove this in the future
+os.makedirs("pkl", exist_ok=True)
 results.to_pickle(os.path.join("pkl", out_filename))
 
 print(f"Wrote to .pkl file at {out_fullpath}")
